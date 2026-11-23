@@ -3,18 +3,25 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>CaseDrop — CS2 & NFT</title>
+<title>CaseDrop Premium</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
+/* =========================================================
+   DESIGN SYSTEM & CSS VARIABLES
+   ========================================================= */
 :root {
-  --bg: #0a0d12;
-  --panel: #151a24;
-  --panel-2: #1f2735;
-  --border: #2a3548;
-  --text: #e8eaed;
-  --text-dim: #8b95a5;
-  --accent: #ff6b35;
-  --green: #4ade80;
+  --bg: #0a0d14;
+  --panel: #151a26;
+  --panel-hover: #1e2536;
+  --border: #2a344a;
+  --text: #f0f3f8;
+  --text-dim: #8b95a8;
+  --accent: #ff6b00;
+  --accent-glow: rgba(255, 107, 0, 0.4);
+  --green: #10b981;
+  --red: #ef4444;
+  
+  /* Rarity Colors */
   --r-consumer: #b0c3d9;
   --r-industrial: #5e98d9;
   --r-milspec: #4b69ff;
@@ -22,472 +29,789 @@
   --r-classified: #d32ce6;
   --r-covert: #eb4b4b;
   --r-knife: #ffd700;
-  --header-h: 56px;
-  --nav-h: 60px;
+  
+  --nav-h: 70px;
+  --header-h: 64px;
 }
-* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-html, body {
-  background: var(--bg);
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; user-select: none; }
+body {
+  background-color: var(--bg);
+  background-image: radial-gradient(circle at 50% -20%, #1e2536 0%, var(--bg) 70%);
+  background-attachment: fixed;
   color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   min-height: 100vh;
   overflow-x: hidden;
-}
-body {
-  background: radial-gradient(circle at top, #1a2330 0%, #0a0d12 70%);
-  background-attachment: fixed;
-  padding-bottom: calc(var(--nav-h) + 20px);
   padding-top: var(--header-h);
+  padding-bottom: calc(var(--nav-h) + 20px);
 }
 
-/* ===== Header ===== */
+/* Scrollbar */
+::-webkit-scrollbar { width: 0px; }
+
+/* =========================================================
+   HEADER
+   ========================================================= */
 header {
-  position: fixed;
-  top: 0; left: 0; right: 0;
-  height: var(--header-h);
-  z-index: 50;
-  backdrop-filter: blur(12px);
-  background: rgba(10, 13, 18, 0.85);
+  position: fixed; top: 0; left: 0; right: 0; height: var(--header-h);
+  background: rgba(10, 13, 20, 0.85); backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--border);
-  padding: 0 16px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 0 16px; z-index: 100;
 }
-.brand { font-weight: 900; font-size: 20px; letter-spacing: 1px; }
-.brand span { color: var(--accent); }
-.user-info { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-dim); }
-.balance {
-  background: linear-gradient(135deg, #1e2e14, #2d421e);
-  border: 1px solid #426b26;
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-weight: 700;
-  color: #b8e986;
-  display: flex; align-items: center; gap: 6px;
+.brand { font-size: 22px; font-weight: 900; letter-spacing: 0.5px; background: linear-gradient(90deg, #fff, #8b95a8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.brand span { color: var(--accent); -webkit-text-fill-color: var(--accent); }
+.header-right { display: flex; align-items: center; gap: 12px; }
+.balance-pill {
+  background: linear-gradient(135deg, #1a2e1d, #2d422e);
+  border: 1px solid #3d5e3e; border-radius: 20px;
+  padding: 6px 14px; display: flex; align-items: center; gap: 6px;
+  font-weight: 800; color: #a3e635; font-size: 14px;
+  transition: 0.3s;
 }
-.balance::before { content: '🪙'; }
+.balance-pill:active { transform: scale(0.95); }
+.avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--panel); border: 2px solid var(--accent); object-fit: cover; }
 
-/* ===== Main ===== */
-main { max-width: 1000px; margin: 0 auto; padding: 20px 16px; }
-h2 { font-size: 14px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: var(--text-dim); margin: 24px 0 12px; display: flex; align-items: center; gap: 8px; }
-h2::after { content: ''; flex: 1; height: 1px; background: var(--border); }
-
-/* ===== Navigation ===== */
+/* =========================================================
+   NAVIGATION
+   ========================================================= */
 nav {
-  position: fixed;
-  bottom: 0; left: 0; right: 0;
-  height: var(--nav-h);
-  background: rgba(10, 13, 18, 0.95);
-  backdrop-filter: blur(12px);
+  position: fixed; bottom: 0; left: 0; right: 0; height: var(--nav-h);
+  background: rgba(10, 13, 20, 0.95); backdrop-filter: blur(16px);
   border-top: 1px solid var(--border);
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
-  z-index: 60;
-  padding: 0 8px;
+  display: flex; justify-content: space-around; align-items: center;
+  padding: 0 8px 10px 8px; z-index: 100;
 }
-.nav-btn {
-  background: none; border: none; color: var(--text-dim);
-  font-size: 11px; font-weight: 700; display: flex; flex-direction: column; align-items: center; gap: 2px;
-  padding: 6px 12px; border-radius: 8px; cursor: pointer;
-  transition: 0.2s;
+.nav-item {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  color: var(--text-dim); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+  transition: 0.2s; cursor: pointer; flex: 1; padding-top: 10px;
 }
-.nav-btn.active { color: var(--accent); }
-.nav-btn .icon { font-size: 20px; }
+.nav-item.active { color: var(--accent); }
+.nav-item svg { width: 24px; height: 24px; fill: currentColor; transition: 0.2s; }
+.nav-item.active svg { filter: drop-shadow(0 0 8px var(--accent-glow)); transform: translateY(-2px); }
 
-/* ===== Pages ===== */
-.page { display: none; }
+/* =========================================================
+   PAGES & LAYOUT
+   ========================================================= */
+.page { display: none; padding: 16px; max-width: 900px; margin: 0 auto; animation: fadeIn 0.3s ease; }
 .page.active { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-/* ===== Cases grid ===== */
-.cases-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 16px; }
+.section-title { font-size: 16px; font-weight: 800; margin: 24px 0 16px; display: flex; align-items: center; gap: 8px; }
+.section-title::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, var(--border), transparent); }
+
+/* =========================================================
+   HOME PAGE (DAILY BONUS)
+   ========================================================= */
+.daily-bonus-card {
+  background: linear-gradient(135deg, #1e2536, #151a26);
+  border: 1px solid var(--border); border-radius: 16px;
+  padding: 20px; display: flex; justify-content: space-between; align-items: center;
+  position: relative; overflow: hidden;
+}
+.daily-bonus-card::before {
+  content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  background: radial-gradient(circle at top right, var(--accent-glow), transparent 50%);
+  pointer-events: none;
+}
+.daily-info h3 { font-size: 16px; margin-bottom: 4px; }
+.daily-info p { font-size: 12px; color: var(--text-dim); }
+.btn-claim {
+  background: var(--accent); color: #fff; border: none; border-radius: 10px;
+  padding: 12px 24px; font-weight: 800; font-size: 14px; cursor: pointer;
+  transition: 0.2s; box-shadow: 0 4px 15px var(--accent-glow);
+  position: relative; z-index: 2;
+}
+.btn-claim:active:not(:disabled) { transform: scale(0.95); }
+.btn-claim:disabled { background: var(--panel); color: var(--text-dim); box-shadow: none; cursor: not-allowed; }
+
+/* =========================================================
+   CASES GRID
+   ========================================================= */
+.cases-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 14px; }
 .case-card {
-  background: linear-gradient(180deg, var(--panel-2) 0%, var(--panel) 100%);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 20px 12px;
-  display: flex; flex-direction: column; align-items: center; gap: 12px;
-  position: relative; overflow: hidden;
-  box-shadow: 0 8px 20px rgba(0,0,0,0.4);
-  transition: 0.2s;
+  background: var(--panel); border: 1px solid var(--border); border-radius: 16px;
+  padding: 16px; display: flex; flex-direction: column; align-items: center;
+  position: relative; overflow: hidden; transition: 0.2s;
 }
-.case-card::before {
-  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
-  background: linear-gradient(90deg, transparent, var(--accent), transparent);
-  opacity: 0.5;
-}
-.case-emoji { font-size: 56px; filter: drop-shadow(0 8px 16px rgba(255,107,53,0.4)); }
-.case-name { font-weight: 800; font-size: 15px; text-align: center; }
-.case-price { font-size: 14px; color: var(--green); font-weight: 800; display: flex; align-items: center; gap: 4px; }
+.case-card:active { transform: scale(0.97); border-color: var(--accent); }
+.case-img { width: 100px; height: 100px; object-fit: contain; margin-bottom: 12px; filter: drop-shadow(0 10px 15px rgba(0,0,0,0.5)); }
+.case-name { font-size: 14px; font-weight: 800; text-align: center; margin-bottom: 8px; }
+.case-price { font-size: 13px; color: var(--green); font-weight: 800; margin-bottom: 12px; display: flex; align-items: center; gap: 4px; }
 .case-price::before { content: '🪙'; }
-.case-open {
-  width: 100%; background: linear-gradient(90deg, var(--accent), #ff8c42);
-  border: none; color: #fff; padding: 12px; border-radius: 10px;
-  font-weight: 800; font-size: 14px; margin-top: 8px;
-  box-shadow: 0 4px 12px rgba(255,107,53,0.3);
-  cursor: pointer;
+.btn-open {
+  width: 100%; background: var(--panel-hover); color: var(--text); border: 1px solid var(--border);
+  padding: 10px; border-radius: 8px; font-weight: 800; font-size: 13px; transition: 0.2s; cursor: pointer;
 }
-.case-open:disabled { background: var(--panel-2); color: var(--text-dim); box-shadow: none; cursor: not-allowed; }
+.case-card:active .btn-open { background: var(--accent); color: #fff; border-color: var(--accent); }
 
-/* ===== Inventory ===== */
-.inventory-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; }
-.inv-item {
-  background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
-  padding: 10px; display: flex; flex-direction: column; gap: 6px; position: relative;
+/* Rarity Colors for cards */
+.r-consumer { --rarity-color: var(--r-consumer); }
+.r-industrial { --rarity-color: var(--r-industrial); }
+.r-milspec { --rarity-color: var(--r-milspec); }
+.r-restricted { --rarity-color: var(--r-restricted); }
+.r-classified { --rarity-color: var(--r-classified); }
+.r-covert { --rarity-color: var(--r-covert); }
+.r-knife { --rarity-color: var(--r-knife); }
+
+/* =========================================================
+   UPGRADER
+   ========================================================= */
+.upgrader-container { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+.upgrade-box { width: 100%; background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 16px; }
+.upgrade-slot { display: flex; justify-content: space-between; align-items: center; }
+.item-preview { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 80px; }
+.item-preview img { width: 80px; height: 60px; object-fit: contain; }
+.item-preview .name { font-size: 10px; text-align: center; color: var(--text-dim); }
+.upgrade-arrow { font-size: 24px; color: var(--accent); }
+.upgrade-controls { width: 100%; margin-top: 16px; }
+.chance-bar { height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; margin: 8px 0; }
+.chance-fill { height: 100%; background: linear-gradient(90deg, var(--red), var(--green)); transition: 0.3s; }
+.btn-upgrade { width: 100%; background: linear-gradient(90deg, #8b5cf6, #6d28d9); color: #fff; border: none; border-radius: 12px; padding: 14px; font-weight: 800; font-size: 16px; box-shadow: 0 4px 15px rgba(109,40,217,0.4); cursor: pointer; }
+.btn-upgrade:active { transform: scale(0.98); }
+
+/* Inventory Selector */
+.inv-selector { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 16px; max-height: 200px; overflow-y: auto; padding-right: 4px; }
+.inv-slot { background: var(--panel-hover); border: 1px solid var(--border); border-radius: 8px; padding: 8px; display: flex; flex-direction: column; align-items: center; cursor: pointer; }
+.inv-slot img { width: 50px; height: 40px; object-fit: contain; }
+.inv-slot.active { border-color: var(--accent); box-shadow: 0 0 10px var(--accent-glow); }
+
+/* =========================================================
+   PROFILE
+   ========================================================= */
+.profile-header { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; }
+.profile-avatar { width: 72px; height: 72px; border-radius: 50%; border: 3px solid var(--accent); box-shadow: 0 0 20px var(--accent-glow); object-fit: cover; }
+.profile-info h2 { font-size: 20px; margin-bottom: 4px; }
+.profile-info p { color: var(--text-dim); font-size: 13px; }
+.stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px; }
+.stat-card { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 16px; text-align: center; }
+.stat-card h4 { font-size: 12px; color: var(--text-dim); text-transform: uppercase; margin-bottom: 8px; }
+.stat-card p { font-size: 20px; font-weight: 800; color: var(--accent); }
+
+/* =========================================================
+   MODALS & ANIMATIONS
+   ========================================================= */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px);
+  z-index: 1000; display: none; align-items: center; justify-content: center; padding: 16px;
 }
-.inv-item::before {
-  content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
-  border-radius: 12px 0 0 12px; background: var(--rarity-color, var(--border));
-  box-shadow: 0 0 10px var(--rarity-color);
+.modal-overlay.active { display: flex; animation: fadeIn 0.2s ease; }
+.modal-content {
+  background: var(--panel); border: 1px solid var(--border); border-radius: 20px;
+  width: 100%; max-width: 500px; padding: 24px; position: relative; overflow: hidden;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.6);
 }
-.inv-item .emoji { font-size: 28px; text-align: center; }
-.inv-item .name { font-size: 11px; font-weight: 700; text-align: center; min-height: 26px; line-height: 1.2; }
-.inv-item .sell-btn { background: rgba(235, 75, 75, 0.1); color: #ff8a8a; border: 1px solid rgba(235, 75, 75, 0.3); padding: 6px; border-radius: 6px; font-size: 11px; font-weight: 800; cursor: pointer; }
-.empty-state { text-align: center; padding: 40px 20px; color: var(--text-dim); border: 1px dashed var(--border); border-radius: 12px; grid-column: 1/-1; }
 
-/* Rarity colors */
-.r-consumer    { --rarity-color: var(--r-consumer); }
-.r-industrial  { --rarity-color: var(--r-industrial); }
-.r-milspec     { --rarity-color: var(--r-milspec); }
-.r-restricted  { --rarity-color: var(--r-restricted); }
-.r-classified  { --rarity-color: var(--r-classified); }
-.r-covert      { --rarity-color: var(--r-covert); }
-.r-knife       { --rarity-color: var(--r-knife); }
-
-/* ===== Loading & Error ===== */
-.loading-state { text-align: center; padding: 40px; color: var(--text-dim); }
-.spinner { display: inline-block; width: 30px; height: 30px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
-@keyframes spin { to { transform: rotate(360deg); } }
-.error-state { text-align: center; padding: 40px; color: var(--r-covert); border: 1px dashed var(--r-covert); border-radius: 12px; }
-.error-state button { margin-top: 12px; background: var(--accent); color: #fff; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 700; cursor: pointer; }
-
-/* ===== CS2 Catalog ===== */
-.catalog-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
-.catalog-item {
-  background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
-  padding: 8px; display: flex; flex-direction: column; align-items: center; gap: 6px;
-  position: relative; overflow: hidden;
+/* Roulette */
+.roulette-wrapper { position: relative; height: 140px; overflow: hidden; margin: 20px 0; border-radius: 12px; border: 1px solid var(--border); background: #000; }
+.roulette-pointer { position: absolute; top: 0; bottom: 0; left: 50%; width: 2px; background: var(--accent); transform: translateX(-50%); z-index: 10; box-shadow: 0 0 15px var(--accent); }
+.roulette-strip { display: flex; gap: 8px; height: 100%; align-items: center; padding: 0 8px; will-change: transform; }
+.roulette-strip.spinning { transition: transform 5s cubic-bezier(0.1, 0.8, 0.15, 1); }
+.roulette-item {
+  flex-shrink: 0; width: 100px; height: 110px; background: var(--panel-hover);
+  border: 1px solid var(--border); border-radius: 8px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 4px;
 }
-.catalog-item::before {
-  content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 3px;
-  background: var(--rarity-color, var(--border));
-}
-.catalog-item img { width: 80px; height: 60px; object-fit: contain; }
-.catalog-item .name { font-size: 11px; font-weight: 700; text-align: center; line-height: 1.2; }
-.catalog-item .price { font-size: 12px; color: var(--green); font-weight: 800; }
+.roulette-item img { width: 60px; height: 50px; object-fit: contain; }
+.roulette-item .name { font-size: 8px; text-align: center; color: var(--text-dim); }
 
-/* ===== NFT Placeholder ===== */
-.nft-placeholder { text-align: center; padding: 40px 20px; color: var(--text-dim); border: 1px dashed var(--border); border-radius: 12px; }
-.nft-placeholder .icon { font-size: 48px; margin-bottom: 16px; }
-.nft-placeholder h3 { color: var(--text); margin-bottom: 8px; }
-.nft-placeholder p { font-size: 14px; line-height: 1.5; max-width: 400px; margin: 0 auto; }
-
-/* ===== Upgrader (заглушка) ===== */
-.upgrader-placeholder { text-align: center; padding: 40px; color: var(--text-dim); }
+/* Result Modal */
+.result-modal { text-align: center; }
+.result-item-img { width: 150px; height: 120px; object-fit: contain; margin: 20px auto; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.5)); }
+.result-title { font-size: 24px; font-weight: 900; margin-bottom: 8px; }
+.result-rarity { font-size: 14px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px; }
+.result-price { font-size: 18px; color: var(--green); font-weight: 800; margin-bottom: 24px; }
+.btn-modal { width: 100%; background: var(--accent); color: #fff; border: none; border-radius: 12px; padding: 16px; font-weight: 800; font-size: 16px; cursor: pointer; }
+.btn-modal:active { transform: scale(0.98); }
 
 /* Toast */
-.toast {
-  position: fixed; top: 70px; left: 50%; transform: translateX(-50%) translateY(-20px);
-  background: var(--panel-2); border: 1px solid var(--border); padding: 10px 20px;
-  border-radius: 10px; font-weight: 700; z-index: 200; opacity: 0; transition: 0.3s; pointer-events: none;
-}
+.toast { position: fixed; top: 80px; left: 50%; transform: translateX(-50%) translateY(-20px); background: var(--panel); border: 1px solid var(--border); padding: 12px 24px; border-radius: 12px; font-weight: 700; font-size: 14px; z-index: 2000; opacity: 0; transition: 0.3s; pointer-events: none; }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 .toast.success { border-color: var(--green); color: var(--green); }
-.toast.error { border-color: var(--r-covert); color: var(--r-covert); }
+.toast.error { border-color: var(--red); color: var(--red); }
 </style>
 </head>
 <body>
 
+<!-- HEADER -->
 <header>
   <div class="brand">Case<span>Drop</span></div>
-  <div class="user-info">
-    <div class="balance" id="balance">1000</div>
+  <div class="header-right">
+    <div class="balance-pill" id="header-balance">🪙 1000</div>
+    <img src="https://telegram.org/img/t_logo.png" id="header-avatar" class="avatar" alt="User">
   </div>
 </header>
 
+<!-- ================= PAGES ================= -->
 <main>
-  <!-- Страница: Главная (Кейсы) -->
+  <!-- PAGE: HOME -->
   <div id="page-home" class="page active">
-    <h2>Кейсы</h2>
-    <div class="cases-grid" id="casesGrid"></div>
+    <div class="daily-bonus-card">
+      <div class="daily-info">
+        <h3>Бонус монет</h3>
+        <p id="daily-timer">Доступно сейчас</p>
+      </div>
+      <button class="btn-claim" id="btn-claim-bonus" onclick="App.claimBonus()">+1500</button>
+    </div>
+
+    <div class="section-title">Популярные кейсы</div>
+    <div class="cases-grid" id="home-cases-grid"></div>
   </div>
 
-  <!-- Страница: Каталог CS2 -->
+  <!-- PAGE: CS2 CASES -->
   <div id="page-cs2" class="page">
-    <h2>Каталог CS2</h2>
-    <div id="cs2Content">
-      <div class="loading-state" id="cs2Loading"><div class="spinner"></div><p style="margin-top:12px;">Загрузка скинов...</p></div>
-      <div id="cs2Error" class="error-state" style="display:none;"></div>
-      <div class="catalog-grid" id="cs2Grid" style="display:none;"></div>
-    </div>
+    <div class="section-title">CS2 Cases</div>
+    <div class="cases-grid" id="cs2-cases-grid"></div>
   </div>
 
-  <!-- Страница: NFT Gifts -->
+  <!-- PAGE: NFT GIFTS -->
   <div id="page-nft" class="page">
-    <h2>NFT Gifts</h2>
-    <div class="nft-placeholder">
-      <div class="icon">🎁</div>
-      <h3>NFT Подарки</h3>
-      <p>Для работы с NFT-подарками требуется серверная валидация <code>initData</code> и интеграция с TON Connect. Интерфейс готов к подключению бэкенда.</p>
-    </div>
+    <div class="section-title">NFT Gifts</div>
+    <div class="cases-grid" id="nft-cases-grid"></div>
   </div>
 
-  <!-- Страница: Апгрейдер -->
+  <!-- PAGE: UPGRADER -->
   <div id="page-upgrader" class="page">
-    <h2>Апгрейдер</h2>
-    <div class="upgrader-placeholder">
-      <p>Апгрейдер будет доступен в следующей части.</p>
+    <div class="section-title">Апгрейдер</div>
+    <div class="upgrader-container">
+      <div class="upgrade-box">
+        <div class="upgrade-slot">
+          <div class="item-preview" id="upg-src-preview">
+            <img src="" style="display:none;" id="upg-src-img">
+            <div class="name" id="upg-src-name">Выбрать</div>
+          </div>
+          <div class="upgrade-arrow">➜</div>
+          <div class="item-preview" id="upg-tgt-preview">
+            <img src="" style="display:none;" id="upg-tgt-img">
+            <div class="name" id="upg-tgt-name">Выбрать</div>
+          </div>
+        </div>
+        
+        <div class="upgrade-controls">
+          <div style="display:flex; justify-content:space-between; font-size:12px; font-weight:800; color:var(--text-dim);">
+            <span>Шанс успеха</span>
+            <span id="upg-chance-text">0%</span>
+          </div>
+          <div class="chance-bar"><div class="chance-fill" id="upg-chance-fill" style="width: 0%;"></div></div>
+        </div>
+        
+        <button class="btn-upgrade" style="margin-top:16px;" onclick="App.performUpgrade()">Апгрейд</button>
+      </div>
+
+      <div class="upgrade-box">
+        <div style="font-size:12px; font-weight:800; margin-bottom:8px; color:var(--text-dim);">Ваш инвентарь:</div>
+        <div class="inv-selector" id="upg-inv-selector"></div>
+      </div>
     </div>
   </div>
 
-  <!-- Страница: Профиль -->
+  <!-- PAGE: PROFILE -->
   <div id="page-profile" class="page">
-    <h2>Профиль и Инвентарь</h2>
-    <div class="inventory-grid" id="inventoryGrid"></div>
+    <div class="profile-header">
+      <img src="https://telegram.org/img/t_logo.png" id="profile-avatar" class="profile-avatar">
+      <div class="profile-info">
+        <h2 id="profile-name">Пользователь</h2>
+        <p id="profile-id">ID: 00000000</p>
+      </div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <h4>Баланс</h4>
+        <p id="stat-balance">1000 🪙</p>
+      </div>
+      <div class="stat-card">
+        <h4>Открыто кейсов</h4>
+        <p id="stat-cases">0</p>
+      </div>
+    </div>
+
+    <div class="section-title">Инвентарь</div>
+    <div class="cases-grid" id="profile-inventory-grid"></div>
   </div>
 </main>
 
+<!-- NAVIGATION -->
 <nav>
-  <button class="nav-btn active" data-page="home"><span class="icon">🏠</span>Главная</button>
-  <button class="nav-btn" data-page="cs2"><span class="icon">🔫</span>CS2</button>
-  <button class="nav-btn" data-page="nft"><span class="icon">🎁</span>NFT</button>
-  <button class="nav-btn" data-page="upgrader"><span class="icon">⬆️</span>Апгрейд</button>
-  <button class="nav-btn" data-page="profile"><span class="icon">👤</span>Профиль</button>
+  <div class="nav-item active" onclick="App.nav('home')">
+    <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+    Главная
+  </div>
+  <div class="nav-item" onclick="App.nav('cs2')">
+    <svg viewBox="0 0 24 24"><path d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3z"/></svg>
+    CS2
+  </div>
+  <div class="nav-item" onclick="App.nav('nft')">
+    <svg viewBox="0 0 24 24"><path d="M20 6h-2.18c.11-.31.18-.65.18-1 0-1.66-1.34-3-3-3-1.05 0-1.96.54-2.5 1.35l-.5.67-.5-.68C10.96 2.54 10.05 2 9 2 7.34 2 6 3.34 6 5c0 .35.07.69.18 1H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-5-2c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zM9 4c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm11 15H4v-2h16v2zm0-5H4V8h5.08L7 10.83 8.62 12 11 8.76l1-1.36 1 1.36L15.38 12 17 10.83 14.92 8H20v6z"/></svg>
+    NFT
+  </div>
+  <div class="nav-item" onclick="App.nav('upgrader')">
+    <svg viewBox="0 0 24 24"><path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/></svg>
+    Апгрейд
+  </div>
+  <div class="nav-item" onclick="App.nav('profile')">
+    <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+    Профиль
+  </div>
 </nav>
+
+<!-- MODALS -->
+<div class="modal-overlay" id="roulette-modal">
+  <div class="modal-content">
+    <div style="text-align:center; font-size:16px; font-weight:800; margin-bottom:12px;">Открытие кейса...</div>
+    <div class="roulette-wrapper">
+      <div class="roulette-pointer"></div>
+      <div class="roulette-strip" id="roulette-strip"></div>
+    </div>
+    <button class="btn-modal" onclick="App.closeModal('roulette-modal')" style="opacity:0.5; pointer-events:none;" id="btn-skip-roulette">Пропустить</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="result-modal">
+  <div class="modal-content result-modal">
+    <div class="result-rarity" id="res-rarity">Редкость</div>
+    <img src="" id="res-img" class="result-item-img">
+    <div class="result-title" id="res-name">Название предмета</div>
+    <div class="result-price" id="res-price">🪙 0</div>
+    <button class="btn-modal" onclick="App.closeModal('result-modal')">Забрать</button>
+  </div>
+</div>
 
 <div class="toast" id="toast"></div>
 
 <script>
-// ===== Telegram =====
-const tg = window.Telegram?.WebApp;
-let userId = 'guest';
-if (tg) {
-  tg.ready(); tg.expand();
-  if (tg.initDataUnsafe?.user) userId = String(tg.initDataUnsafe.user.id);
-}
-
-// ===== State =====
-const STORAGE_KEY = 'casedrop_state_' + userId;
-let state = { balance: 1000, inventory: [] };
-
-function loadState() {
-  try { const raw = localStorage.getItem(STORAGE_KEY); if (raw) state = JSON.parse(raw); } catch(e) {}
-}
-function saveState() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e) {} }
-
-// ===== UI Helpers =====
-function renderBalance() { document.getElementById('balance').textContent = state.balance.toLocaleString('ru-RU'); }
-
-function toast(msg, type = '') {
-  const el = document.getElementById('toast');
-  el.textContent = msg; el.className = 'toast show ' + type;
-  clearTimeout(el._timer);
-  el._timer = setTimeout(() => el.classList.remove('show'), 2000);
-}
-
-// ===== Navigation =====
-document.querySelectorAll('.nav-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    document.getElementById('page-' + btn.dataset.page).classList.add('active');
+/* =========================================================
+   SERVER API SIMULATION (Backend Logic)
+   Имитация сервера. В реальном проекте здесь будут fetch() запросы.
+   ========================================================= */
+const ServerAPI = {
+    // Внутренняя "БД" (localStorage)
+    _getDB() {
+        const db = localStorage.getItem('casedrop_db');
+        if (!db) {
+            return { 
+                balance: 1000, 
+                inventory: [], 
+                lastBonusClaim: 0, 
+                casesOpened: 0,
+                upgrades: 0
+            };
+        }
+        return JSON.parse(db);
+    },
+    _saveDB(data) {
+        localStorage.setItem('casedrop_db', JSON.stringify(data));
+    },
     
-    if (btn.dataset.page === 'cs2') loadCS2Catalog();
-    if (btn.dataset.page === 'profile') renderInventory();
-  });
-});
+    // Проверка initData (Заглушка для симуляции)
+    auth(initData) {
+        // В реальном проекте: проверка подписи initData с секретным ключом бота
+        return { status: 'ok', userId: 12345678 };
+    },
 
-// ===== CS2 Catalog (Real API) =====
-let cs2Loaded = false;
-const CS2_API = 'https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/api/ru/skins.json';
-
-async function loadCS2Catalog() {
-  if (cs2Loaded) return;
-  const loading = document.getElementById('cs2Loading');
-  const errorEl = document.getElementById('cs2Error');
-  const grid = document.getElementById('cs2Grid');
-  
-  loading.style.display = 'block';
-  errorEl.style.display = 'none';
-  grid.style.display = 'none';
-
-  try {
-    const res = await fetch(CS2_API);
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const skins = await res.json();
+    getBalance() {
+        return this._getDB().balance;
+    },
     
-    // Берем первые 60 скинов для примера (можно добавить пагинацию)
-    const sample = skins.slice(0, 60);
-    grid.innerHTML = '';
-    sample.forEach(skin => {
-      const el = document.createElement('div');
-      el.className = 'catalog-item r-' + mapRarity(skin.rarity?.id);
-      el.innerHTML = `
-        <img src="${skin.image}" alt="${skin.name}" loading="lazy" onerror="this.style.display='none'">
-        <div class="name">${skin.name}</div>
-        <div class="price">🪙 ${(skin.rarity?.id === 'rarity_ancient_weapon' ? '5000' : '1500')}</div>
-      `;
-      grid.appendChild(el);
-    });
-    loading.style.display = 'none';
-    grid.style.display = 'grid';
-    cs2Loaded = true;
-  } catch (err) {
-    console.error(err);
-    loading.style.display = 'none';
-    errorEl.style.display = 'block';
-    errorEl.innerHTML = `
-      <p>Не удалось загрузить каталог CS2.</p>
-      <p style="font-size:12px; margin-top:4px;">${err.message}</p>
-      <button onclick="loadCS2Catalog(true)">Повторить</button>
-    `;
-  }
-}
+    getInventory() {
+        return this._getDB().inventory;
+    },
 
-function mapRarity(id) {
-  if (!id) return 'consumer';
-  if (id.includes('common')) return 'consumer';
-  if (id.includes('uncommon')) return 'industrial';
-  if (id.includes('rare')) return 'milspec';
-  if (id.includes('mythical')) return 'restricted';
-  if (id.includes('legendary')) return 'classified';
-  if (id.includes('ancient')) return 'covert';
-  return 'consumer';
-}
+    claimBonus() {
+        const db = this._getDB();
+        const now = Date.now();
+        const cooldown = 15 * 60 * 1000; // 15 минут
+        
+        if (now - db.lastBonusClaim < cooldown) {
+            return { error: 'Кулдаун еще не прошел' };
+        }
+        
+        db.balance += 1500;
+        db.lastBonusClaim = now;
+        this._saveDB(db);
+        return { success: true, balance: db.balance };
+    },
 
-// Перезагрузка при повторной попытке
-window.loadCS2Catalog = function(force) {
-  if (force) { cs2Loaded = false; }
-  loadCS2Catalog();
+    checkBonusStatus() {
+        const db = this._getDB();
+        const now = Date.now();
+        const cooldown = 15 * 60 * 1000;
+        const diff = now - db.lastBonusClaim;
+        if (diff >= cooldown) return { available: true };
+        return { available: false, timeLeft: cooldown - diff };
+    },
+
+    openCase(caseData) {
+        const db = this._getDB();
+        if (db.balance < caseData.price) {
+            return { error: 'Недостаточно средств' };
+        }
+
+        // Взвешенный рандом
+        const totalWeight = caseData.items.reduce((sum, item) => sum + item.weight, 0);
+        let random = Math.random() * totalWeight;
+        let winner = caseData.items[0];
+        for (const item of caseData.items) {
+            random -= item.weight;
+            if (random <= 0) { winner = item; break; }
+        }
+
+        // Списание и выдача
+        db.balance -= caseData.price;
+        db.casesOpened += 1;
+        
+        const newItem = {
+            id: 'inv_' + Date.now(),
+            name: winner.name,
+            rarity: winner.rarity,
+            value: winner.value,
+            icon: winner.icon
+        };
+        db.inventory.push(newItem);
+        this._saveDB(db);
+
+        return { success: true, winner, balance: db.balance };
+    },
+
+    upgradeItem(itemId, targetValue) {
+        const db = this._getDB();
+        const itemIndex = db.inventory.findIndex(i => i.id === itemId);
+        if (itemIndex === -1) return { error: 'Предмет не найден' };
+        
+        const item = db.inventory[itemIndex];
+        if (item.value > targetValue) return { error: 'Слишком дорогой предмет' };
+
+        const chance = (item.value / targetValue) * 100;
+        const isSuccess = Math.random() * 100 <= chance;
+
+        // Удаляем старый предмет
+        db.inventory.splice(itemIndex, 1);
+
+        if (isSuccess) {
+            // Выдаем новый предмет
+            db.inventory.push({
+                id: 'inv_' + Date.now(),
+                name: 'Апгрейд Target',
+                rarity: 'covert',
+                value: targetValue,
+                icon: 'https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/images/skins/weapon_ak47_cu_ak47_asiimov_light.png'
+            });
+            db.upgrades += 1;
+            this._saveDB(db);
+            return { success: true, isWin: true, chance };
+        } else {
+            this._saveDB(db);
+            return { success: true, isWin: false, chance };
+        }
+    }
 };
 
-// ===== Cases (Главная) =====
-const CASES = [
-  { id: 'starter', name: 'Стартовый кейс', emoji: '📦', price: 100, items: [
-    { name: 'P250 | Песок', rarity: 'consumer', value: 20, emoji: '🔫', weight: 40 },
-    { name: 'MP9 | Пыль', rarity: 'consumer', value: 25, emoji: '💥', weight: 25 },
-    { name: 'Five-SeveN | Кобальт', rarity: 'industrial', value: 60, emoji: '🔫', weight: 15 },
-    { name: 'Galil AR | Синий', rarity: 'industrial', value: 80, emoji: '🎯', weight: 8 },
-    { name: 'SG 553 | Волна', rarity: 'milspec', value: 200, emoji: '🎯', weight: 8 },
-    { name: 'AK-47 | Синий ламинат', rarity: 'restricted', value: 600, emoji: '🎯', weight: 3.5 },
-    { name: 'AWP | Азимов', rarity: 'classified', value: 2000, emoji: '🏹', weight: 0.45 },
-    { name: '★ Нож-бабочка | Градиент', rarity: 'knife', value: 15000, emoji: '🔪', weight: 0.05 },
-  ]},
-  { id: 'standard', name: 'Боевой кейс', emoji: '🎁', price: 500, items: [
-    { name: 'Glock-18 | Пустыня', rarity: 'consumer', value: 100, emoji: '🔫', weight: 25 },
-    { name: 'UMP-45 | Лабиринт', rarity: 'consumer', value: 120, emoji: '💥', weight: 20 },
-    { name: 'Desert Eagle | Бронза', rarity: 'industrial', value: 300, emoji: '🔫', weight: 20 },
-    { name: 'M4A4 | Пустыня', rarity: 'industrial', value: 350, emoji: '🎯', weight: 15 },
-    { name: 'AK-47 | Красная линия', rarity: 'milspec', value: 800, emoji: '🎯', weight: 12 },
-    { name: 'M4A1-S | Синий гром', rarity: 'restricted', value: 2500, emoji: '🎯', weight: 6 },
-    { name: 'AWP | Электрик', rarity: 'classified', value: 8000, emoji: '🏹', weight: 1.7 },
-    { name: '★ Штык-нож | Кровавая паутина', rarity: 'knife', value: 40000, emoji: '🔪', weight: 0.3 },
-  ]},
-  { id: 'premium', name: 'Элитный кейс', emoji: '💎', price: 1500, items: [
-    { name: 'MP7 | Кобальт', rarity: 'industrial', value: 500, emoji: '💥', weight: 20 },
-    { name: 'FAMAS | Ночная', rarity: 'industrial', value: 600, emoji: '🎯', weight: 20 },
-    { name: 'M4A4 | Гриффон', rarity: 'milspec', value: 1500, emoji: '🎯', weight: 25 },
-    { name: 'AK-47 | Неонуар', rarity: 'milspec', value: 2000, emoji: '🎯', weight: 18 },
-    { name: 'AWP | Феникс', rarity: 'restricted', value: 6000, emoji: '🏹', weight: 12 },
-    { name: 'Desert Eagle | Принтстрим', rarity: 'classified', value: 15000, emoji: '🔫', weight: 4.5 },
-    { name: '★ Керамбит | Синий', rarity: 'knife', value: 80000, emoji: '🗡️', weight: 0.5 },
-  ]},
-  { id: 'legendary', name: 'Легендарный кейс', emoji: '👑', price: 5000, items: [
-    { name: 'AWP | Гиперзверь', rarity: 'restricted', value: 12000, emoji: '🏹', weight: 30 },
-    { name: 'AK-47 | Огненный змей', rarity: 'restricted', value: 15000, emoji: '🎯', weight: 25 },
-    { name: 'M4A4 | Кактус', rarity: 'classified', value: 35000, emoji: '🎯', weight: 20 },
-    { name: 'Desert Eagle | Кровавая паутина', rarity: 'classified', value: 45000, emoji: '🔫', weight: 15 },
-    { name: 'AWP | Драконье пламя', rarity: 'covert', value: 120000, emoji: '🏹', weight: 8 },
-    { name: '★ Керамбит | Градиент', rarity: 'knife', value: 200000, emoji: '🗡️', weight: 1.5 },
-    { name: '★ Нож-бабочка | Синий', rarity: 'knife', value: 250000, emoji: '🔪', weight: 0.5 },
-  ]},
+/* =========================================================
+   DATABASE / MOCK DATA
+   ========================================================= */
+const CS2_API_BASE = 'https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/images/skins/';
+const MOCK_CASES = [
+    {
+        id: 'case1', name: 'Стартовый', price: 100, category: 'CS2',
+        image: 'https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/images/crates/crate_community_1.png',
+        items: [
+            { name: 'P250 Песок', rarity: 'consumer', value: 20, icon: CS2_API_BASE + 'weapon_p250_cu_p250_army.png', weight: 40 },
+            { name: 'AK-47 Синий', rarity: 'restricted', value: 500, icon: CS2_API_BASE + 'weapon_ak47_cu_ak47_anarchy.png', weight: 10 },
+            { name: 'AWP Азимов', rarity: 'covert', value: 5000, icon: CS2_API_BASE + 'weapon_awp_cu_awp_asiimov_light.png', weight: 1 },
+        ]
+    },
+    {
+        id: 'case2', name: 'Боевой', price: 500, category: 'CS2',
+        image: 'https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/images/crates/crate_community_2.png',
+        items: [
+            { name: 'Glock-18', rarity: 'industrial', value: 100, icon: CS2_API_BASE + 'weapon_glock_cu_glock_army.png', weight: 30 },
+            { name: 'M4A4', rarity: 'classified', value: 2500, icon: CS2_API_BASE + 'weapon_m4a1_cu_m4a1_howl.png', weight: 5 },
+            { name: 'Керамбит', rarity: 'knife', value: 50000, icon: CS2_API_BASE + 'weapon_knife_karambit_cu_karambit_slaughter.png', weight: 0.5 },
+        ]
+    },
+    {
+        id: 'nft1', name: 'NFT Common', price: 200, category: 'NFT',
+        image: 'https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/images/crates/crate_community_3.png', // Mock image
+        items: [
+            { name: 'Blue Gift', rarity: 'consumer', value: 100, icon: 'https://telegram.org/img/t_logo.png', weight: 50 },
+            { name: 'Purple Gift', rarity: 'restricted', value: 500, icon: 'https://telegram.org/img/t_logo.png', weight: 10 },
+        ]
+    }
 ];
 
-function renderCases() {
-  const grid = document.getElementById('casesGrid');
-  grid.innerHTML = '';
-  for (const c of CASES) {
-    const card = document.createElement('div');
-    card.className = 'case-card';
-    card.innerHTML = `
-      <div class="case-emoji">${c.emoji}</div>
-      <div class="case-name">${c.name}</div>
-      <div class="case-price">${c.price.toLocaleString('ru-RU')}</div>
-      <button class="case-open" ${state.balance < c.price ? 'disabled' : ''} onclick="openCase('${c.id}')">Открыть</button>
-    `;
-    grid.appendChild(card);
-  }
-}
+/* =========================================================
+   APP CONTROLLER (UI & Events)
+   ========================================================= */
+const App = {
+    init() {
+        this.setupTelegram();
+        this.renderCases('home-cases-grid', MOCK_CASES.filter(c => c.category === 'CS2').slice(0,2));
+        this.renderCases('cs2-cases-grid', MOCK_CASES.filter(c => c.category === 'CS2'));
+        this.renderCases('nft-cases-grid', MOCK_CASES.filter(c => c.category === 'NFT'));
+        this.updateUI();
+        this.setupBonusTimer();
+        this.renderUpgraderInventory();
+    },
 
-function openCase(caseId) {
-  const caseData = CASES.find(c => c.id === caseId);
-  if (!caseData) return;
-  if (state.balance < caseData.price) { toast('Недостаточно монет', 'error'); return; }
-  
-  // Снимаем деньги
-  state.balance -= caseData.price;
-  // Выбираем предмет (взвешенный рандом)
-  const totalWeight = caseData.items.reduce((s, i) => s + i.weight, 0);
-  let r = Math.random() * totalWeight;
-  let winner = caseData.items[caseData.items.length - 1];
-  for (const item of caseData.items) {
-    r -= item.weight;
-    if (r <= 0) { winner = item; break; }
-  }
-  
-  // Добавляем в инвентарь
-  state.inventory.push({
-    name: winner.name,
-    rarity: winner.rarity,
-    value: winner.value,
-    emoji: winner.emoji
-  });
-  saveState();
-  renderBalance();
-  renderCases();
-  
-  toast(`Вы получили: ${winner.emoji} ${winner.name}`, 'success');
-  // Здесь можно добавить модалку с анимацией (как в части 2)
-}
+    setupTelegram() {
+        if (window.Telegram?.WebApp) {
+            const tg = window.Telegram.WebApp;
+            tg.ready(); tg.expand();
+            if (tg.initDataUnsafe?.user) {
+                const user = tg.initDataUnsafe.user;
+                if (user.photo_url) {
+                    document.getElementById('header-avatar').src = user.photo_url;
+                    document.getElementById('profile-avatar').src = user.photo_url;
+                }
+                document.getElementById('profile-name').textContent = user.first_name;
+                document.getElementById('profile-id').textContent = 'ID: ' + user.id;
+            }
+        }
+    },
 
-// ===== Inventory =====
-function renderInventory() {
-  const grid = document.getElementById('inventoryGrid');
-  grid.innerHTML = '';
-  if (state.inventory.length === 0) {
-    grid.innerHTML = '<div class="empty-state">Инвентарь пуст. Откройте первый кейс на главной!</div>';
-    return;
-  }
-  state.inventory.forEach((item, idx) => {
-    const el = document.createElement('div');
-    el.className = `inv-item r-${item.rarity}`;
-    el.innerHTML = `
-      <div class="emoji">${item.emoji}</div>
-      <div class="name">${item.name}</div>
-      <button class="sell-btn" onclick="sellItem(${idx})">Продать · ${item.value.toLocaleString('ru-RU')} 🪙</button>
-    `;
-    grid.appendChild(el);
-  });
-}
+    nav(pageId) {
+        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
+        
+        // Поиск кнопки навигации
+        const navBtns = document.querySelectorAll('.nav-item');
+        navBtns.forEach(btn => {
+            if (btn.getAttribute('onclick').includes(pageId)) btn.classList.add('active');
+        });
+        
+        document.getElementById('page-' + pageId).classList.add('active');
+        
+        if (pageId === 'profile') this.renderProfileInventory();
+        if (pageId === 'upgrader') this.renderUpgraderInventory();
+    },
 
-function sellItem(idx) {
-  const item = state.inventory[idx];
-  if (!item) return;
-  state.balance += item.value;
-  state.inventory.splice(idx, 1);
-  saveState();
-  renderBalance();
-  renderInventory();
-  toast(`+${item.value.toLocaleString('ru-RU')} 🪙`, 'success');
-}
+    updateUI() {
+        const balance = ServerAPI.getBalance();
+        document.getElementById('header-balance').textContent = '🪙 ' + balance.toLocaleString('ru-RU');
+        document.getElementById('stat-balance').textContent = balance.toLocaleString('ru-RU') + ' 🪙';
+        
+        const db = localStorage.getItem('casedrop_db');
+        if (db) {
+            document.getElementById('stat-cases').textContent = JSON.parse(db).casesOpened || 0;
+        }
+    },
 
-// ===== Init =====
-loadState();
-renderBalance();
-renderCases();
-renderInventory();
+    showToast(msg, type = '') {
+        const t = document.getElementById('toast');
+        t.textContent = msg; t.className = 'toast show ' + type;
+        clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove('show'), 2500);
+    },
+
+    closeModal(id) {
+        document.getElementById(id).classList.remove('active');
+    },
+
+    /* ===== DAILY BONUS ===== */
+    setupBonusTimer() {
+        setInterval(() => {
+            const status = ServerAPI.checkBonusStatus();
+            const btn = document.getElementById('btn-claim-bonus');
+            const timerTxt = document.getElementById('daily-timer');
+            
+            if (status.available) {
+                btn.disabled = false;
+                timerTxt.textContent = 'Доступно сейчас!';
+            } else {
+                btn.disabled = true;
+                const m = Math.floor(status.timeLeft / 60000);
+                const s = Math.floor((status.timeLeft % 60000) / 1000);
+                timerTxt.textContent = `Доступно через ${m}:${s.toString().padStart(2, '0')}`;
+            }
+        }, 1000);
+    },
+
+    claimBonus() {
+        const res = ServerAPI.claimBonus();
+        if (res.error) return this.showToast(res.error, 'error');
+        this.showToast('+1500 🪙 Получено!', 'success');
+        this.updateUI();
+    },
+
+    /* ===== CASES ===== */
+    renderCases(containerId, cases) {
+        const grid = document.getElementById(containerId);
+        grid.innerHTML = '';
+        cases.forEach(c => {
+            const el = document.createElement('div');
+            el.className = 'case-card';
+            el.innerHTML = `
+                <img src="${c.image}" class="case-img" onerror="this.src='https://telegram.org/img/t_logo.png'">
+                <div class="case-name">${c.name}</div>
+                <div class="case-price">${c.price.toLocaleString('ru-RU')}</div>
+                <button class="btn-open" onclick="App.openCase('${c.id}')">Открыть</button>
+            `;
+            grid.appendChild(el);
+        });
+    },
+
+    openCase(caseId) {
+        const caseData = MOCK_CASES.find(c => c.id === caseId);
+        if (!caseData) return;
+        
+        const res = ServerAPI.openCase(caseData);
+        if (res.error) return this.showToast(res.error, 'error');
+        
+        this.updateUI();
+        this.startRouletteAnimation(caseData, res.winner);
+    },
+
+    startRouletteAnimation(caseData, winner) {
+        const modal = document.getElementById('roulette-modal');
+        const strip = document.getElementById('roulette-strip');
+        
+        modal.classList.add('active');
+        strip.classList.remove('spinning');
+        strip.style.transform = 'translateX(0)';
+        strip.innerHTML = '';
+        
+        // Генерируем ленту из 50 предметов
+        const TOTAL_ITEMS = 50;
+        const WIN_INDEX = 45;
+        
+        for(let i = 0; i < TOTAL_ITEMS; i++) {
+            const item = (i === WIN_INDEX) ? winner : caseData.items[Math.floor(Math.random() * caseData.items.length)];
+            const el = document.createElement('div');
+            el.className = `roulette-item r-${item.rarity}`;
+            el.innerHTML = `
+                <img src="${item.icon}" onerror="this.src='https://telegram.org/img/t_logo.png'">
+                <div class="name">${item.name}</div>
+            `;
+            strip.appendChild(el);
+        }
+
+        // Задержка для прогрузки DOM
+        setTimeout(() => {
+            const containerWidth = document.querySelector('.roulette-wrapper').clientWidth;
+            const itemWidth = 100 + 8; // width + gap
+            const targetOffset = (WIN_INDEX * itemWidth) - (containerWidth / 2) + (itemWidth / 2);
+            
+            strip.classList.add('spinning');
+            strip.style.transform = `translateX(-${targetOffset}px)`;
+
+            // Показываем результат после окончания анимации
+            setTimeout(() => {
+                this.closeModal('roulette-modal');
+                this.showResultModal(winner);
+            }, 5100);
+        }, 50);
+    },
+
+    showResultModal(winner) {
+        document.getElementById('res-rarity').textContent = winner.rarity.toUpperCase();
+        document.getElementById('res-rarity').style.color = `var(--r-${winner.rarity})`;
+        document.getElementById('res-img').src = winner.icon;
+        document.getElementById('res-name').textContent = winner.name;
+        document.getElementById('res-name').style.color = `var(--r-${winner.rarity})`;
+        document.getElementById('res-price').textContent = `🪙 ${winner.value.toLocaleString('ru-RU')}`;
+        document.getElementById('result-modal').classList.add('active');
+    },
+
+    /* ===== UPGRADER ===== */
+    selectedUpgradeItem: null,
+
+    renderUpgraderInventory() {
+        const inv = ServerAPI.getInventory();
+        const grid = document.getElementById('upg-inv-selector');
+        grid.innerHTML = '';
+        
+        if (inv.length === 0) {
+            grid.innerHTML = '<div style="font-size:12px; color:var(--text-dim); grid-column:1/-1; text-align:center;">Инвентарь пуст</div>';
+            return;
+        }
+
+        inv.forEach(item => {
+            const el = document.createElement('div');
+            el.className = `inv-slot r-${item.rarity}`;
+            el.innerHTML = `<img src="${item.icon}" onerror="this.src='https://telegram.org/img/t_logo.png'">`;
+            el.onclick = () => this.selectUpgradeItem(item, el);
+            grid.appendChild(el);
+        });
+    },
+
+    selectUpgradeItem(item, el) {
+        this.selectedUpgradeItem = item;
+        document.querySelectorAll('.inv-slot').forEach(s => s.classList.remove('active'));
+        el.classList.add('active');
+
+        document.getElementById('upg-src-img').src = item.icon;
+        document.getElementById('upg-src-img').style.display = 'block';
+        document.getElementById('upg-src-name').textContent = item.name;
+        
+        this.calculateUpgradeChance();
+    },
+
+    calculateUpgradeChance() {
+        if (!this.selectedUpgradeItem) return;
+        
+        // Хардкод целевой предмет для демо (в реальности - выбор из каталога)
+        const targetValue = 10000; 
+        document.getElementById('upg-tgt-img').src = CS2_API_BASE + 'weapon_awp_cu_awp_dragon_lore_light.png';
+        document.getElementById('upg-tgt-img').style.display = 'block';
+        document.getElementById('upg-tgt-name').textContent = 'AWP Dragon Lore';
+        
+        let chance = (this.selectedUpgradeItem.value / targetValue) * 100;
+        if (chance > 90) chance = 90; // Максимальный шанс
+        
+        document.getElementById('upg-chance-text').textContent = chance.toFixed(1) + '%';
+        document.getElementById('upg-chance-fill').style.width = chance + '%';
+    },
+
+    performUpgrade() {
+        if (!this.selectedUpgradeItem) return this.showToast('Выберите предмет', 'error');
+        
+        const targetValue = 10000;
+        const res = ServerAPI.upgradeItem(this.selectedUpgradeItem.id, targetValue);
+        
+        if (res.error) return this.showToast(res.error, 'error');
+        
+        this.selectedUpgradeItem = null;
+        this.updateUI();
+        this.renderUpgraderInventory();
+        document.getElementById('upg-src-img').style.display = 'none';
+        document.getElementById('upg-src-name').textContent = 'Выбрать';
+        document.getElementById('upg-chance-text').textContent = '0%';
+        document.getElementById('upg-chance-fill').style.width = '0%';
+
+        if (res.isWin) {
+            this.showToast('🔥 АПГРЕЙД УСПЕШЕН!', 'success');
+        } else {
+            this.showToast('💀 Предмет сгорел', 'error');
+        }
+    },
+
+    /* ===== PROFILE ===== */
+    renderProfileInventory() {
+        const inv = ServerAPI.getInventory();
+        const grid = document.getElementById('profile-inventory-grid');
+        grid.innerHTML = '';
+        
+        if (inv.length === 0) {
+            grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; color:var(--text-dim); padding:20px;">Пусто</div>';
+            return;
+        }
+
+        inv.forEach(item => {
+            const el = document.createElement('div');
+            el.className = 'case-card';
+            el.innerHTML = `
+                <img src="${item.icon}" class="case-img" style="width:70px;height:70px;" onerror="this.src='https://telegram.org/img/t_logo.png'">
+                <div class="case-name">${item.name}</div>
+                <div class="case-price" style="color:var(--r-${item.rarity});">🪙 ${item.value}</div>
+            `;
+            grid.appendChild(el);
+        });
+    }
+};
+
+// Запуск приложения
+window.onload = () => App.init();
 </script>
 </body>
 </html>
