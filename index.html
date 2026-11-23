@@ -3,18 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>CaseDrop — скины CS2</title>
+<title>CaseDrop — CS2 & NFT</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
 :root {
-  --bg: #0f1419;
-  --panel: #1c2430;
-  --panel-2: #242e3c;
-  --border: #2c3847;
+  --bg: #0a0d12;
+  --panel: #151a24;
+  --panel-2: #1f2735;
+  --border: #2a3548;
   --text: #e8eaed;
   --text-dim: #8b95a5;
   --accent: #ff6b35;
-  --accent-2: #ff8c42;
   --green: #4ade80;
   --r-consumer: #b0c3d9;
   --r-industrial: #5e98d9;
@@ -23,8 +22,10 @@
   --r-classified: #d32ce6;
   --r-covert: #eb4b4b;
   --r-knife: #ffd700;
+  --header-h: 56px;
+  --nav-h: 60px;
 }
-* { box-sizing: border-box; margin: 0; padding: 0; }
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 html, body {
   background: var(--bg);
   color: var(--text);
@@ -33,199 +34,117 @@ html, body {
   overflow-x: hidden;
 }
 body {
-  background: radial-gradient(ellipse at top, #1a2330 0%, #0f1419 60%);
+  background: radial-gradient(circle at top, #1a2330 0%, #0a0d12 70%);
   background-attachment: fixed;
-  padding-bottom: 40px;
+  padding-bottom: calc(var(--nav-h) + 20px);
+  padding-top: var(--header-h);
 }
 
 /* ===== Header ===== */
 header {
-  position: sticky;
-  top: 0;
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: var(--header-h);
   z-index: 50;
   backdrop-filter: blur(12px);
-  background: rgba(15, 20, 25, 0.85);
+  background: rgba(10, 13, 18, 0.85);
   border-bottom: 1px solid var(--border);
-  padding: 12px 16px;
+  padding: 0 16px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 12px;
 }
-.brand {
-  font-weight: 800;
-  font-size: 18px;
-  letter-spacing: 0.5px;
-}
+.brand { font-weight: 900; font-size: 20px; letter-spacing: 1px; }
 .brand span { color: var(--accent); }
-.user-info {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  color: var(--text-dim);
-}
+.user-info { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-dim); }
 .balance {
-  background: linear-gradient(135deg, #2a3a1e, #3a4a2e);
-  border: 1px solid #4a6a2e;
+  background: linear-gradient(135deg, #1e2e14, #2d421e);
+  border: 1px solid #426b26;
   padding: 6px 12px;
   border-radius: 20px;
   font-weight: 700;
   color: #b8e986;
-  font-size: 14px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  white-space: nowrap;
+  display: flex; align-items: center; gap: 6px;
 }
 .balance::before { content: '🪙'; }
-.btn-topup {
-  background: var(--accent);
-  color: #fff;
-  border: none;
-  padding: 8px 14px;
-  border-radius: 8px;
-  font-weight: 700;
-  cursor: pointer;
-  font-size: 13px;
-  transition: 0.15s;
-}
-.btn-topup:hover { background: var(--accent-2); }
-.btn-topup:active { transform: scale(0.96); }
 
 /* ===== Main ===== */
 main { max-width: 1000px; margin: 0 auto; padding: 20px 16px; }
-h2 {
-  font-size: 14px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  color: var(--text-dim);
-  margin: 24px 0 12px;
+h2 { font-size: 14px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: var(--text-dim); margin: 24px 0 12px; display: flex; align-items: center; gap: 8px; }
+h2::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+/* ===== Navigation ===== */
+nav {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  height: var(--nav-h);
+  background: rgba(10, 13, 18, 0.95);
+  backdrop-filter: blur(12px);
+  border-top: 1px solid var(--border);
   display: flex;
+  justify-content: space-around;
   align-items: center;
-  gap: 8px;
+  z-index: 60;
+  padding: 0 8px;
 }
-h2::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: var(--border);
+.nav-btn {
+  background: none; border: none; color: var(--text-dim);
+  font-size: 11px; font-weight: 700; display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: 6px 12px; border-radius: 8px; cursor: pointer;
+  transition: 0.2s;
 }
+.nav-btn.active { color: var(--accent); }
+.nav-btn .icon { font-size: 20px; }
+
+/* ===== Pages ===== */
+.page { display: none; }
+.page.active { display: block; }
 
 /* ===== Cases grid ===== */
-.cases-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 14px;
-}
+.cases-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 16px; }
 .case-card {
-  background: linear-gradient(160deg, var(--panel), var(--panel-2));
+  background: linear-gradient(180deg, var(--panel-2) 0%, var(--panel) 100%);
   border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 20px 16px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  cursor: pointer;
+  border-radius: 16px;
+  padding: 20px 12px;
+  display: flex; flex-direction: column; align-items: center; gap: 12px;
+  position: relative; overflow: hidden;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.4);
   transition: 0.2s;
-  position: relative;
-  overflow: hidden;
 }
 .case-card::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(circle at top, rgba(255,107,53,0.15), transparent 60%);
-  opacity: 0;
-  transition: 0.2s;
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  opacity: 0.5;
 }
-.case-card:hover { border-color: var(--accent); transform: translateY(-2px); }
-.case-card:hover::before { opacity: 1; }
-.case-emoji { font-size: 48px; line-height: 1; filter: drop-shadow(0 4px 12px rgba(0,0,0,0.4)); }
-.case-name { font-weight: 700; font-size: 15px; text-align: center; }
-.case-price {
-  font-size: 13px;
-  color: var(--green);
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
+.case-emoji { font-size: 56px; filter: drop-shadow(0 8px 16px rgba(255,107,53,0.4)); }
+.case-name { font-weight: 800; font-size: 15px; text-align: center; }
+.case-price { font-size: 14px; color: var(--green); font-weight: 800; display: flex; align-items: center; gap: 4px; }
 .case-price::before { content: '🪙'; }
 .case-open {
-  width: 100%;
-  background: var(--accent);
-  border: none;
-  color: #fff;
-  padding: 10px;
-  border-radius: 8px;
-  font-weight: 700;
+  width: 100%; background: linear-gradient(90deg, var(--accent), #ff8c42);
+  border: none; color: #fff; padding: 12px; border-radius: 10px;
+  font-weight: 800; font-size: 14px; margin-top: 8px;
+  box-shadow: 0 4px 12px rgba(255,107,53,0.3);
   cursor: pointer;
-  font-size: 13px;
-  transition: 0.15s;
-  margin-top: 4px;
 }
-.case-open:hover { background: var(--accent-2); }
-.case-open:disabled {
-  background: var(--panel-2);
-  color: var(--text-dim);
-  cursor: not-allowed;
-}
+.case-open:disabled { background: var(--panel-2); color: var(--text-dim); box-shadow: none; cursor: not-allowed; }
 
 /* ===== Inventory ===== */
-.inventory-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 12px;
-}
+.inventory-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; }
 .inv-item {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  position: relative;
-  transition: 0.15s;
+  background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+  padding: 10px; display: flex; flex-direction: column; gap: 6px; position: relative;
 }
 .inv-item::before {
-  content: '';
-  position: absolute;
-  left: 0; top: 0; bottom: 0;
-  width: 4px;
-  border-radius: 10px 0 0 10px;
-  background: var(--rarity-color, var(--border));
-  box-shadow: 0 0 12px var(--rarity-color, transparent);
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+  border-radius: 12px 0 0 12px; background: var(--rarity-color, var(--border));
+  box-shadow: 0 0 10px var(--rarity-color);
 }
-.inv-item .emoji { font-size: 32px; text-align: center; }
-.inv-item .name { font-size: 12px; font-weight: 600; text-align: center; min-height: 28px; }
-.inv-item .sell-btn {
-  background: #2c1e1e;
-  color: #ff8a8a;
-  border: 1px solid #4a2e2e;
-  padding: 6px;
-  border-radius: 6px;
-  font-size: 11px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: 0.15s;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 4px;
-}
-.inv-item .sell-btn:hover { background: #4a2e2e; color: #ffb8b8; }
-.empty-state {
-  text-align: center;
-  padding: 40px 20px;
-  color: var(--text-dim);
-  font-size: 14px;
-  border: 1px dashed var(--border);
-  border-radius: 12px;
-}
+.inv-item .emoji { font-size: 28px; text-align: center; }
+.inv-item .name { font-size: 11px; font-weight: 700; text-align: center; min-height: 26px; line-height: 1.2; }
+.inv-item .sell-btn { background: rgba(235, 75, 75, 0.1); color: #ff8a8a; border: 1px solid rgba(235, 75, 75, 0.3); padding: 6px; border-radius: 6px; font-size: 11px; font-weight: 800; cursor: pointer; }
+.empty-state { text-align: center; padding: 40px 20px; color: var(--text-dim); border: 1px dashed var(--border); border-radius: 12px; grid-column: 1/-1; }
 
 /* Rarity colors */
 .r-consumer    { --rarity-color: var(--r-consumer); }
@@ -236,163 +155,42 @@ h2::after {
 .r-covert      { --rarity-color: var(--r-covert); }
 .r-knife       { --rarity-color: var(--r-knife); }
 
-/* ===== Modal / Roulette ===== */
-.modal {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.85);
-  backdrop-filter: blur(8px);
-  z-index: 100;
-  display: none;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
+/* ===== Loading & Error ===== */
+.loading-state { text-align: center; padding: 40px; color: var(--text-dim); }
+.spinner { display: inline-block; width: 30px; height: 30px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.error-state { text-align: center; padding: 40px; color: var(--r-covert); border: 1px dashed var(--r-covert); border-radius: 12px; }
+.error-state button { margin-top: 12px; background: var(--accent); color: #fff; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 700; cursor: pointer; }
+
+/* ===== CS2 Catalog ===== */
+.catalog-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
+.catalog-item {
+  background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+  padding: 8px; display: flex; flex-direction: column; align-items: center; gap: 6px;
+  position: relative; overflow: hidden;
 }
-.modal.active { display: flex; }
-.roulette-wrap {
-  width: 100%;
-  max-width: 900px;
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  overflow: hidden;
-  position: relative;
-  padding: 24px 0;
-}
-.roulette-pointer {
-  position: absolute;
-  left: 50%;
-  top: 0;
-  bottom: 0;
-  width: 2px;
-  background: var(--accent);
-  transform: translateX(-50%);
-  z-index: 5;
-  box-shadow: 0 0 12px var(--accent), 0 0 24px var(--accent);
-  pointer-events: none;
-}
-.roulette-pointer::before, .roulette-pointer::after {
-  content: '';
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  border: 8px solid transparent;
-}
-.roulette-pointer::before {
-  top: -4px;
-  border-top-color: var(--accent);
-}
-.roulette-pointer::after {
-  bottom: -4px;
-  border-bottom-color: var(--accent);
-}
-.roulette-container {
-  width: 100%;
-  overflow: hidden;
-  mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
-  -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
-}
-.roulette-strip {
-  display: flex;
-  gap: 8px;
-  will-change: transform;
-  padding: 4px 0;
-}
-.roulette-strip.animating {
-  transition: transform 5.5s cubic-bezier(0.12, 0.8, 0.15, 1);
-}
-.roulette-item {
-  flex-shrink: 0;
-  width: 120px;
-  height: 150px;
-  background: var(--panel-2);
-  border: 2px solid var(--rarity-color, var(--border));
-  border-radius: 10px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 8px;
-  position: relative;
-  overflow: hidden;
-}
-.roulette-item::after {
-  content: '';
-  position: absolute;
-  bottom: 0; left: 0; right: 0;
-  height: 4px;
+.catalog-item::before {
+  content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 3px;
   background: var(--rarity-color, var(--border));
 }
-.roulette-item .emoji { font-size: 38px; }
-.roulette-item .name {
-  font-size: 10px;
-  font-weight: 600;
-  text-align: center;
-  line-height: 1.2;
-  color: var(--text);
-}
-.roulette-item.winner {
-  box-shadow: 0 0 20px var(--rarity-color), 0 0 40px var(--rarity-color);
-}
+.catalog-item img { width: 80px; height: 60px; object-fit: contain; }
+.catalog-item .name { font-size: 11px; font-weight: 700; text-align: center; line-height: 1.2; }
+.catalog-item .price { font-size: 12px; color: var(--green); font-weight: 800; }
 
-.result-info {
-  margin-top: 20px;
-  text-align: center;
-  min-height: 60px;
-}
-.result-info .won-label {
-  font-size: 12px;
-  color: var(--text-dim);
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  font-weight: 700;
-}
-.result-info .won-name {
-  font-size: 20px;
-  font-weight: 800;
-  margin-top: 4px;
-}
-.result-info .won-price {
-  font-size: 14px;
-  color: var(--green);
-  font-weight: 700;
-  margin-top: 4px;
-}
-.result-info .won-price::before { content: '🪙 '; }
-.btn-close-modal {
-  margin-top: 20px;
-  background: var(--accent);
-  color: #fff;
-  border: none;
-  padding: 12px 40px;
-  border-radius: 10px;
-  font-weight: 700;
-  font-size: 15px;
-  cursor: pointer;
-  transition: 0.15s;
-}
-.btn-close-modal:hover { background: var(--accent-2); }
-.btn-close-modal:disabled { opacity: 0.4; cursor: not-allowed; }
+/* ===== NFT Placeholder ===== */
+.nft-placeholder { text-align: center; padding: 40px 20px; color: var(--text-dim); border: 1px dashed var(--border); border-radius: 12px; }
+.nft-placeholder .icon { font-size: 48px; margin-bottom: 16px; }
+.nft-placeholder h3 { color: var(--text); margin-bottom: 8px; }
+.nft-placeholder p { font-size: 14px; line-height: 1.5; max-width: 400px; margin: 0 auto; }
 
-/* ===== Toast ===== */
+/* ===== Upgrader (заглушка) ===== */
+.upgrader-placeholder { text-align: center; padding: 40px; color: var(--text-dim); }
+
+/* Toast */
 .toast {
-  position: fixed;
-  top: 70px;
-  left: 50%;
-  transform: translateX(-50%) translateY(-20px);
-  background: var(--panel);
-  border: 1px solid var(--border);
-  padding: 10px 20px;
-  border-radius: 10px;
-  font-weight: 700;
-  font-size: 14px;
-  z-index: 200;
-  opacity: 0;
-  transition: 0.3s;
-  pointer-events: none;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  position: fixed; top: 70px; left: 50%; transform: translateX(-50%) translateY(-20px);
+  background: var(--panel-2); border: 1px solid var(--border); padding: 10px 20px;
+  border-radius: 10px; font-weight: 700; z-index: 200; opacity: 0; transition: 0.3s; pointer-events: none;
 }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 .toast.success { border-color: var(--green); color: var(--green); }
@@ -404,141 +202,208 @@ h2::after {
 <header>
   <div class="brand">Case<span>Drop</span></div>
   <div class="user-info">
-    <span id="userName"></span>
     <div class="balance" id="balance">1000</div>
-    <button class="btn-topup" onclick="topUp()">+1000</button>
   </div>
 </header>
 
 <main>
-  <h2>Кейсы</h2>
-  <div class="cases-grid" id="casesGrid"></div>
+  <!-- Страница: Главная (Кейсы) -->
+  <div id="page-home" class="page active">
+    <h2>Кейсы</h2>
+    <div class="cases-grid" id="casesGrid"></div>
+  </div>
 
-  <h2>Инвентарь <span id="invCount" style="color:var(--text-dim);font-weight:400;font-size:12px;"></span></h2>
-  <div class="inventory-grid" id="inventoryGrid"></div>
-</main>
-
-<!-- Roulette Modal -->
-<div class="modal" id="openingModal">
-  <div class="roulette-wrap">
-    <div class="roulette-pointer"></div>
-    <div class="roulette-container" id="rouletteContainer">
-      <div class="roulette-strip" id="rouletteStrip"></div>
+  <!-- Страница: Каталог CS2 -->
+  <div id="page-cs2" class="page">
+    <h2>Каталог CS2</h2>
+    <div id="cs2Content">
+      <div class="loading-state" id="cs2Loading"><div class="spinner"></div><p style="margin-top:12px;">Загрузка скинов...</p></div>
+      <div id="cs2Error" class="error-state" style="display:none;"></div>
+      <div class="catalog-grid" id="cs2Grid" style="display:none;"></div>
     </div>
   </div>
-  <div class="result-info" id="resultInfo"></div>
-  <button class="btn-close-modal" id="closeModalBtn" disabled>Забрать</button>
-</div>
+
+  <!-- Страница: NFT Gifts -->
+  <div id="page-nft" class="page">
+    <h2>NFT Gifts</h2>
+    <div class="nft-placeholder">
+      <div class="icon">🎁</div>
+      <h3>NFT Подарки</h3>
+      <p>Для работы с NFT-подарками требуется серверная валидация <code>initData</code> и интеграция с TON Connect. Интерфейс готов к подключению бэкенда.</p>
+    </div>
+  </div>
+
+  <!-- Страница: Апгрейдер -->
+  <div id="page-upgrader" class="page">
+    <h2>Апгрейдер</h2>
+    <div class="upgrader-placeholder">
+      <p>Апгрейдер будет доступен в следующей части.</p>
+    </div>
+  </div>
+
+  <!-- Страница: Профиль -->
+  <div id="page-profile" class="page">
+    <h2>Профиль и Инвентарь</h2>
+    <div class="inventory-grid" id="inventoryGrid"></div>
+  </div>
+</main>
+
+<nav>
+  <button class="nav-btn active" data-page="home"><span class="icon">🏠</span>Главная</button>
+  <button class="nav-btn" data-page="cs2"><span class="icon">🔫</span>CS2</button>
+  <button class="nav-btn" data-page="nft"><span class="icon">🎁</span>NFT</button>
+  <button class="nav-btn" data-page="upgrader"><span class="icon">⬆️</span>Апгрейд</button>
+  <button class="nav-btn" data-page="profile"><span class="icon">👤</span>Профиль</button>
+</nav>
 
 <div class="toast" id="toast"></div>
 
 <script>
-/* =========================================================
-   ДАННЫЕ: КЕЙСЫ И СКИНЫ
-   ========================================================= */
-const CASES = [
-  {
-    id: 'starter',
-    name: 'Стартовый кейс',
-    emoji: '📦',
-    price: 100,
-    items: [
-      { name: 'P250 | Песок',            rarity: 'consumer',   value: 20,    emoji: '🔫', weight: 40   },
-      { name: 'MP9 | Пыль',              rarity: 'consumer',   value: 25,    emoji: '💥', weight: 25   },
-      { name: 'Five-SeveN | Кобальт',    rarity: 'industrial', value: 60,    emoji: '🔫', weight: 15   },
-      { name: 'Galil AR | Синий',        rarity: 'industrial', value: 80,    emoji: '🎯', weight: 8    },
-      { name: 'SG 553 | Волна',          rarity: 'milspec',    value: 200,   emoji: '🎯', weight: 8    },
-      { name: 'AK-47 | Синий ламинат',   rarity: 'restricted', value: 600,   emoji: '🎯', weight: 3.5  },
-      { name: 'AWP | Азимов',            rarity: 'classified', value: 2000,  emoji: '🏹', weight: 0.45 },
-      { name: '★ Нож-бабочка | Градиент',rarity: 'knife',      value: 15000, emoji: '🔪', weight: 0.05 },
-    ]
-  },
-  {
-    id: 'standard',
-    name: 'Боевой кейс',
-    emoji: '🎁',
-    price: 500,
-    items: [
-      { name: 'Glock-18 | Пустыня',      rarity: 'consumer',   value: 100,   emoji: '🔫', weight: 25   },
-      { name: 'UMP-45 | Лабиринт',       rarity: 'consumer',   value: 120,   emoji: '💥', weight: 20   },
-      { name: 'Desert Eagle | Бронза',   rarity: 'industrial', value: 300,   emoji: '🔫', weight: 20   },
-      { name: 'M4A4 | Пустыня',          rarity: 'industrial', value: 350,   emoji: '🎯', weight: 15   },
-      { name: 'AK-47 | Красная линия',   rarity: 'milspec',    value: 800,   emoji: '🎯', weight: 12   },
-      { name: 'M4A1-S | Синий гром',     rarity: 'restricted', value: 2500,  emoji: '🎯', weight: 6    },
-      { name: 'AWP | Электрик',          rarity: 'classified', value: 8000,  emoji: '🏹', weight: 1.7  },
-      { name: '★ Штык-нож | Кровавая паутина', rarity: 'knife', value: 40000, emoji: '🔪', weight: 0.3  },
-    ]
-  },
-  {
-    id: 'premium',
-    name: 'Элитный кейс',
-    emoji: '💎',
-    price: 1500,
-    items: [
-      { name: 'MP7 | Кобальт',            rarity: 'industrial', value: 500,   emoji: '💥', weight: 20   },
-      { name: 'FAMAS | Ночная',           rarity: 'industrial', value: 600,   emoji: '🎯', weight: 20   },
-      { name: 'M4A4 | Гриффон',           rarity: 'milspec',    value: 1500,  emoji: '🎯', weight: 25   },
-      { name: 'AK-47 | Неонуар',          rarity: 'milspec',    value: 2000,  emoji: '🎯', weight: 18   },
-      { name: 'AWP | Феникс',             rarity: 'restricted', value: 6000,  emoji: '🏹', weight: 12   },
-      { name: 'Desert Eagle | Принтстрим',rarity: 'classified', value: 15000, emoji: '🔫', weight: 4.5  },
-      { name: '★ Керамбит | Синий',       rarity: 'knife',      value: 80000, emoji: '🗡️', weight: 0.5  },
-    ]
-  },
-  {
-    id: 'legendary',
-    name: 'Легендарный кейс',
-    emoji: '👑',
-    price: 5000,
-    items: [
-      { name: 'AWP | Гиперзверь',         rarity: 'restricted', value: 12000,  emoji: '🏹', weight: 30   },
-      { name: 'AK-47 | Огненный змей',    rarity: 'restricted', value: 15000,  emoji: '🎯', weight: 25   },
-      { name: 'M4A4 | Кактус',            rarity: 'classified', value: 35000,  emoji: '🎯', weight: 20   },
-      { name: 'Desert Eagle | Кровавая паутина', rarity: 'classified', value: 45000, emoji: '🔫', weight: 15 },
-      { name: 'AWP | Драконье пламя',     rarity: 'covert',     value: 120000, emoji: '🏹', weight: 8    },
-      { name: '★ Керамбит | Градиент',    rarity: 'knife',      value: 200000, emoji: '🗡️', weight: 1.5  },
-      { name: '★ Нож-бабочка | Синий',    rarity: 'knife',      value: 250000, emoji: '🔪', weight: 0.5  },
-    ]
-  }
-];
-
-/* =========================================================
-   TELEGRAM
-   ========================================================= */
+// ===== Telegram =====
 const tg = window.Telegram?.WebApp;
 let userId = 'guest';
 if (tg) {
-  tg.ready();
-  tg.expand();
-  if (tg.initDataUnsafe?.user) {
-    userId = String(tg.initDataUnsafe.user.id);
-    const name = tg.initDataUnsafe.user.first_name || tg.initDataUnsafe.user.username || 'Игрок';
-    document.getElementById('userName').textContent = name;
-  }
+  tg.ready(); tg.expand();
+  if (tg.initDataUnsafe?.user) userId = String(tg.initDataUnsafe.user.id);
 }
 
-/* =========================================================
-   СОСТОЯНИЕ
-   ========================================================= */
+// ===== State =====
 const STORAGE_KEY = 'casedrop_state_' + userId;
 let state = { balance: 1000, inventory: [] };
 
 function loadState() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) state = JSON.parse(raw);
-  } catch(e) { console.warn('load failed', e); }
+  try { const raw = localStorage.getItem(STORAGE_KEY); if (raw) state = JSON.parse(raw); } catch(e) {}
 }
-function saveState() {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
-  catch(e) { console.warn('save failed', e); }
+function saveState() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e) {} }
+
+// ===== UI Helpers =====
+function renderBalance() { document.getElementById('balance').textContent = state.balance.toLocaleString('ru-RU'); }
+
+function toast(msg, type = '') {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.className = 'toast show ' + type;
+  clearTimeout(el._timer);
+  el._timer = setTimeout(() => el.classList.remove('show'), 2000);
 }
 
-/* =========================================================
-   UI
-   ========================================================= */
-function renderBalance() {
-  document.getElementById('balance').textContent = state.balance.toLocaleString('ru-RU');
+// ===== Navigation =====
+document.querySelectorAll('.nav-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById('page-' + btn.dataset.page).classList.add('active');
+    
+    if (btn.dataset.page === 'cs2') loadCS2Catalog();
+    if (btn.dataset.page === 'profile') renderInventory();
+  });
+});
+
+// ===== CS2 Catalog (Real API) =====
+let cs2Loaded = false;
+const CS2_API = 'https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/api/ru/skins.json';
+
+async function loadCS2Catalog() {
+  if (cs2Loaded) return;
+  const loading = document.getElementById('cs2Loading');
+  const errorEl = document.getElementById('cs2Error');
+  const grid = document.getElementById('cs2Grid');
+  
+  loading.style.display = 'block';
+  errorEl.style.display = 'none';
+  grid.style.display = 'none';
+
+  try {
+    const res = await fetch(CS2_API);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const skins = await res.json();
+    
+    // Берем первые 60 скинов для примера (можно добавить пагинацию)
+    const sample = skins.slice(0, 60);
+    grid.innerHTML = '';
+    sample.forEach(skin => {
+      const el = document.createElement('div');
+      el.className = 'catalog-item r-' + mapRarity(skin.rarity?.id);
+      el.innerHTML = `
+        <img src="${skin.image}" alt="${skin.name}" loading="lazy" onerror="this.style.display='none'">
+        <div class="name">${skin.name}</div>
+        <div class="price">🪙 ${(skin.rarity?.id === 'rarity_ancient_weapon' ? '5000' : '1500')}</div>
+      `;
+      grid.appendChild(el);
+    });
+    loading.style.display = 'none';
+    grid.style.display = 'grid';
+    cs2Loaded = true;
+  } catch (err) {
+    console.error(err);
+    loading.style.display = 'none';
+    errorEl.style.display = 'block';
+    errorEl.innerHTML = `
+      <p>Не удалось загрузить каталог CS2.</p>
+      <p style="font-size:12px; margin-top:4px;">${err.message}</p>
+      <button onclick="loadCS2Catalog(true)">Повторить</button>
+    `;
+  }
 }
+
+function mapRarity(id) {
+  if (!id) return 'consumer';
+  if (id.includes('common')) return 'consumer';
+  if (id.includes('uncommon')) return 'industrial';
+  if (id.includes('rare')) return 'milspec';
+  if (id.includes('mythical')) return 'restricted';
+  if (id.includes('legendary')) return 'classified';
+  if (id.includes('ancient')) return 'covert';
+  return 'consumer';
+}
+
+// Перезагрузка при повторной попытке
+window.loadCS2Catalog = function(force) {
+  if (force) { cs2Loaded = false; }
+  loadCS2Catalog();
+};
+
+// ===== Cases (Главная) =====
+const CASES = [
+  { id: 'starter', name: 'Стартовый кейс', emoji: '📦', price: 100, items: [
+    { name: 'P250 | Песок', rarity: 'consumer', value: 20, emoji: '🔫', weight: 40 },
+    { name: 'MP9 | Пыль', rarity: 'consumer', value: 25, emoji: '💥', weight: 25 },
+    { name: 'Five-SeveN | Кобальт', rarity: 'industrial', value: 60, emoji: '🔫', weight: 15 },
+    { name: 'Galil AR | Синий', rarity: 'industrial', value: 80, emoji: '🎯', weight: 8 },
+    { name: 'SG 553 | Волна', rarity: 'milspec', value: 200, emoji: '🎯', weight: 8 },
+    { name: 'AK-47 | Синий ламинат', rarity: 'restricted', value: 600, emoji: '🎯', weight: 3.5 },
+    { name: 'AWP | Азимов', rarity: 'classified', value: 2000, emoji: '🏹', weight: 0.45 },
+    { name: '★ Нож-бабочка | Градиент', rarity: 'knife', value: 15000, emoji: '🔪', weight: 0.05 },
+  ]},
+  { id: 'standard', name: 'Боевой кейс', emoji: '🎁', price: 500, items: [
+    { name: 'Glock-18 | Пустыня', rarity: 'consumer', value: 100, emoji: '🔫', weight: 25 },
+    { name: 'UMP-45 | Лабиринт', rarity: 'consumer', value: 120, emoji: '💥', weight: 20 },
+    { name: 'Desert Eagle | Бронза', rarity: 'industrial', value: 300, emoji: '🔫', weight: 20 },
+    { name: 'M4A4 | Пустыня', rarity: 'industrial', value: 350, emoji: '🎯', weight: 15 },
+    { name: 'AK-47 | Красная линия', rarity: 'milspec', value: 800, emoji: '🎯', weight: 12 },
+    { name: 'M4A1-S | Синий гром', rarity: 'restricted', value: 2500, emoji: '🎯', weight: 6 },
+    { name: 'AWP | Электрик', rarity: 'classified', value: 8000, emoji: '🏹', weight: 1.7 },
+    { name: '★ Штык-нож | Кровавая паутина', rarity: 'knife', value: 40000, emoji: '🔪', weight: 0.3 },
+  ]},
+  { id: 'premium', name: 'Элитный кейс', emoji: '💎', price: 1500, items: [
+    { name: 'MP7 | Кобальт', rarity: 'industrial', value: 500, emoji: '💥', weight: 20 },
+    { name: 'FAMAS | Ночная', rarity: 'industrial', value: 600, emoji: '🎯', weight: 20 },
+    { name: 'M4A4 | Гриффон', rarity: 'milspec', value: 1500, emoji: '🎯', weight: 25 },
+    { name: 'AK-47 | Неонуар', rarity: 'milspec', value: 2000, emoji: '🎯', weight: 18 },
+    { name: 'AWP | Феникс', rarity: 'restricted', value: 6000, emoji: '🏹', weight: 12 },
+    { name: 'Desert Eagle | Принтстрим', rarity: 'classified', value: 15000, emoji: '🔫', weight: 4.5 },
+    { name: '★ Керамбит | Синий', rarity: 'knife', value: 80000, emoji: '🗡️', weight: 0.5 },
+  ]},
+  { id: 'legendary', name: 'Легендарный кейс', emoji: '👑', price: 5000, items: [
+    { name: 'AWP | Гиперзверь', rarity: 'restricted', value: 12000, emoji: '🏹', weight: 30 },
+    { name: 'AK-47 | Огненный змей', rarity: 'restricted', value: 15000, emoji: '🎯', weight: 25 },
+    { name: 'M4A4 | Кактус', rarity: 'classified', value: 35000, emoji: '🎯', weight: 20 },
+    { name: 'Desert Eagle | Кровавая паутина', rarity: 'classified', value: 45000, emoji: '🔫', weight: 15 },
+    { name: 'AWP | Драконье пламя', rarity: 'covert', value: 120000, emoji: '🏹', weight: 8 },
+    { name: '★ Керамбит | Градиент', rarity: 'knife', value: 200000, emoji: '🗡️', weight: 1.5 },
+    { name: '★ Нож-бабочка | Синий', rarity: 'knife', value: 250000, emoji: '🔪', weight: 0.5 },
+  ]},
+];
 
 function renderCases() {
   const grid = document.getElementById('casesGrid');
@@ -550,94 +415,29 @@ function renderCases() {
       <div class="case-emoji">${c.emoji}</div>
       <div class="case-name">${c.name}</div>
       <div class="case-price">${c.price.toLocaleString('ru-RU')}</div>
-      <button class="case-open" ${state.balance < c.price ? 'disabled' : ''}>Открыть</button>
+      <button class="case-open" ${state.balance < c.price ? 'disabled' : ''} onclick="openCase('${c.id}')">Открыть</button>
     `;
-    card.querySelector('.case-open').addEventListener('click', (e) => {
-      e.stopPropagation();
-      openCase(c.id);
-    });
     grid.appendChild(card);
   }
 }
 
-function renderInventory() {
-  const grid = document.getElementById('inventoryGrid');
-  const count = document.getElementById('invCount');
-  count.textContent = `(${state.inventory.length})`;
-  grid.innerHTML = '';
-  if (state.inventory.length === 0) {
-    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1;">Инвентарь пуст. Открой первый кейс!</div>';
-    return;
-  }
-  state.inventory.forEach((item, idx) => {
-    const el = document.createElement('div');
-    el.className = `inv-item r-${item.rarity}`;
-    el.innerHTML = `
-      <div class="emoji">${item.emoji}</div>
-      <div class="name">${item.name}</div>
-      <button class="sell-btn">Продать · ${item.value.toLocaleString('ru-RU')} 🪙</button>
-    `;
-    el.querySelector('.sell-btn').addEventListener('click', () => sellItem(idx));
-    grid.appendChild(el);
-  });
-}
-
-function renderAll() {
-  renderBalance();
-  renderCases();
-  renderInventory();
-}
-
-/* =========================================================
-   ЛОГИКА
-   ========================================================= */
-function pickWeighted(items) {
-  const total = items.reduce((s, i) => s + i.weight, 0);
-  let r = Math.random() * total;
-  for (const item of items) {
-    r -= item.weight;
-    if (r <= 0) return item;
-  }
-  return items[items.length - 1];
-}
-
-function topUp() {
-  state.balance += 1000;
-  saveState();
-  renderBalance();
-  renderCases();
-  toast('+1000 🪙', 'success');
-}
-
-function sellItem(idx) {
-  const item = state.inventory[idx];
-  if (!item) return;
-  state.balance += item.value;
-  state.inventory.splice(idx, 1);
-  saveState();
-  renderAll();
-  toast(`+${item.value.toLocaleString('ru-RU')} 🪙`, 'success');
-}
-
-/* =========================================================
-   ОТКРЫТИЕ КЕЙСА
-   ========================================================= */
-let isOpening = false;
-
 function openCase(caseId) {
-  if (isOpening) return;
   const caseData = CASES.find(c => c.id === caseId);
   if (!caseData) return;
-  if (state.balance < caseData.price) {
-    toast('Недостаточно монет', 'error');
-    return;
-  }
-  isOpening = true;
-
+  if (state.balance < caseData.price) { toast('Недостаточно монет', 'error'); return; }
+  
+  // Снимаем деньги
   state.balance -= caseData.price;
-  const winner = pickWeighted(caseData.items);
-
-  // Сразу добавляем в инвентарь
+  // Выбираем предмет (взвешенный рандом)
+  const totalWeight = caseData.items.reduce((s, i) => s + i.weight, 0);
+  let r = Math.random() * totalWeight;
+  let winner = caseData.items[caseData.items.length - 1];
+  for (const item of caseData.items) {
+    r -= item.weight;
+    if (r <= 0) { winner = item; break; }
+  }
+  
+  // Добавляем в инвентарь
   state.inventory.push({
     name: winner.name,
     rarity: winner.rarity,
@@ -647,115 +447,47 @@ function openCase(caseId) {
   saveState();
   renderBalance();
   renderCases();
+  
+  toast(`Вы получили: ${winner.emoji} ${winner.name}`, 'success');
+  // Здесь можно добавить модалку с анимацией (как в части 2)
+}
 
-  // Показываем модалку
-  const modal = document.getElementById('openingModal');
-  const strip = document.getElementById('rouletteStrip');
-  const container = document.getElementById('rouletteContainer');
-  const resultInfo = document.getElementById('resultInfo');
-  const closeBtn = document.getElementById('closeModalBtn');
-
-  modal.classList.add('active');
-  resultInfo.innerHTML = '';
-  closeBtn.disabled = true;
-  closeBtn.textContent = 'Крутим...';
-
-  // Строим ленту (70 слотов, победитель на позиции 60)
-  const TOTAL = 70;
-  const WIN_INDEX = 60;
-  strip.innerHTML = '';
-  strip.classList.remove('animating');
-  strip.style.transform = 'translateX(0)';
-
-  for (let i = 0; i < TOTAL; i++) {
-    const item = (i === WIN_INDEX) ? winner : pickWeighted(caseData.items);
-    const el = document.createElement('div');
-    el.className = `roulette-item r-${item.rarity}`;
-    el.innerHTML = `<div class="emoji">${item.emoji}</div><div class="name">${item.name}</div>`;
-    strip.appendChild(el);
+// ===== Inventory =====
+function renderInventory() {
+  const grid = document.getElementById('inventoryGrid');
+  grid.innerHTML = '';
+  if (state.inventory.length === 0) {
+    grid.innerHTML = '<div class="empty-state">Инвентарь пуст. Откройте первый кейс на главной!</div>';
+    return;
   }
-
-  // Расчёт цели
-  const itemWidth = 120;
-  const gap = 8;
-  const step = itemWidth + gap;
-  const containerWidth = container.clientWidth;
-  const winnerCenter = WIN_INDEX * step + itemWidth / 2;
-  const randomOffset = (Math.random() - 0.5) * (itemWidth * 0.6);
-  const targetX = containerWidth / 2 - winnerCenter + randomOffset;
-
-  // Форсируем рефлоу, чтобы transition сработал
-  void strip.offsetWidth;
-
-  requestAnimationFrame(() => {
-    strip.classList.add('animating');
-    strip.style.transform = `translateX(${targetX}px)`;
-  });
-
-  // По завершении — подсветка и инфо
-  const onEnd = () => {
-    strip.removeEventListener('transitionend', onEnd);
-    const winnerEl = strip.children[WIN_INDEX];
-    if (winnerEl) winnerEl.classList.add('winner');
-
-    const rarityLabel = {
-      consumer: 'Обычный',
-      industrial: 'Промышленный',
-      milspec: 'Армейский',
-      restricted: 'Запрещённый',
-      classified: 'Засекреченный',
-      covert: 'Тайный',
-      knife: '★ Редкий специальный'
-    }[winner.rarity] || '';
-
-    resultInfo.innerHTML = `
-      <div class="won-label">${rarityLabel}</div>
-      <div class="won-name">${winner.emoji} ${winner.name}</div>
-      <div class="won-price">${winner.value.toLocaleString('ru-RU')}</div>
+  state.inventory.forEach((item, idx) => {
+    const el = document.createElement('div');
+    el.className = `inv-item r-${item.rarity}`;
+    el.innerHTML = `
+      <div class="emoji">${item.emoji}</div>
+      <div class="name">${item.name}</div>
+      <button class="sell-btn" onclick="sellItem(${idx})">Продать · ${item.value.toLocaleString('ru-RU')} 🪙</button>
     `;
-    closeBtn.disabled = false;
-    closeBtn.textContent = 'Забрать';
-
-    // Обновляем инвентарь под модалкой
-    renderInventory();
-    isOpening = false;
-  };
-  strip.addEventListener('transitionend', onEnd);
-
-  // Fallback на случай отсутствия transitionend
-  setTimeout(() => {
-    if (isOpening) { isOpening = false; onEnd(); }
-  }, 6000);
+    grid.appendChild(el);
+  });
 }
 
-document.getElementById('closeModalBtn').addEventListener('click', () => {
-  const modal = document.getElementById('openingModal');
-  modal.classList.remove('active');
-  const strip = document.getElementById('rouletteStrip');
-  strip.classList.remove('animating');
-  strip.style.transform = 'translateX(0)';
-  document.getElementById('rouletteStrip').innerHTML = '';
-  document.getElementById('resultInfo').innerHTML = '';
-  renderAll();
-});
-
-/* =========================================================
-   TOAST
-   ========================================================= */
-let toastTimer;
-function toast(msg, type = '') {
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.className = 'toast show ' + type;
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => el.classList.remove('show'), 1800);
+function sellItem(idx) {
+  const item = state.inventory[idx];
+  if (!item) return;
+  state.balance += item.value;
+  state.inventory.splice(idx, 1);
+  saveState();
+  renderBalance();
+  renderInventory();
+  toast(`+${item.value.toLocaleString('ru-RU')} 🪙`, 'success');
 }
 
-/* =========================================================
-   INIT
-   ========================================================= */
+// ===== Init =====
 loadState();
-renderAll();
+renderBalance();
+renderCases();
+renderInventory();
 </script>
 </body>
 </html>
