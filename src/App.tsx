@@ -1,121 +1,1390 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+import React, {
+  useState, useEffect, useCallback, useMemo, useRef,
+  createContext, useContext,
+} from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import {
+  Home, Package, Gift, Box, User, Coins,
+  ChevronRight, ChevronLeft, X, Check, Clock, Trophy, Zap, Star,
+} from 'lucide-react'
 
-function App() {
-  const [count, setCount] = useState(0)
+// ==================================================================
+// TYPES
+// ==================================================================
+type Page =
+  | 'home' | 'cases' | 'gifts' | 'inventory'
+  | 'upgrade' | 'tournaments' | 'daily' | 'profile'
+
+type CaseRarity = 'Standard' | 'Premium' | 'Elite' | 'Special'
+type GiftRarity = 'Classic' | 'Premium' | 'Rare' | 'Special'
+
+interface TgUser {
+  id: string
+  username: string
+  avatar: string
+}
+
+interface CaseItem {
+  id: string
+  name: string
+  rarity: string
+  value: number
+  emoji: string
+}
+
+interface CS2Case {
+  id: string
+  name: string
+  price: number
+  rarity: CaseRarity
+  items: CaseItem[]
+}
+
+interface TelegramGift {
+  id: string
+  name: string
+  description: string
+  rarity: GiftRarity
+  value: number
+  emoji: string
+  price: number
+}
+
+interface InventoryItem {
+  id: string
+  type: 'case' | 'gift'
+  name: string
+  rarity: string
+  value: number
+  emoji: string
+  obtainedAt: number
+  source: string
+}
+
+interface DailyReward {
+  day: number
+  coins: number
+  items: { name: string; emoji: string; value: number }[]
+}
+
+interface PersistedState {
+  coins: number
+  inventory: InventoryItem[]
+  lastDailyClaim: number
+  dailyStreak: number
+  lastWeeklyClaim: number
+  rewardsCount: number
+}
+
+// ==================================================================
+// GLOBAL
+// ==================================================================
+declare global {
+  interface Window {
+    Telegram?: {
+      WebApp?: {
+        ready?: () => void
+        expand?: () => void
+        initDataUnsafe?: {
+          user?: { id: number; username?: string; photo_url?: string }
+        }
+      }
+    }
+  }
+}
+
+// ==================================================================
+// CONSTANTS
+// ==================================================================
+const CS2_CASES: CS2Case[] = [
+  {
+    id: 'standard',
+    name: 'Standard Case',
+    price: 500,
+    rarity: 'Standard',
+    items: [
+      { id: '1', name: 'Pistol Skin',  rarity: 'Common',   value: 50,  emoji: '🔫' },
+      { id: '2', name: 'Rifle Skin',   rarity: 'Uncommon', value: 150, emoji: '🎯' },
+      { id: '3', name: 'Knife Skin',   rarity: 'Rare',     value: 500, emoji: '🔪' },
+      { id: '4', name: 'Grenade Skin', rarity: 'Uncommon', value: 200, emoji: '💣' },
+    ],
+  },
+  {
+    id: 'premium',
+    name: 'Premium Case',
+    price: 1000,
+    rarity: 'Premium',
+    items: [
+      { id: '5', name: 'Dragon Lore', rarity: 'Epic',      value: 2000, emoji: '🐉' },
+      { id: '6', name: 'Fade Knife',  rarity: 'Legendary', value: 5000, emoji: '🌈' },
+      { id: '7', name: 'Eagle AWP',   rarity: 'Epic',      value: 2500, emoji: '🦅' },
+    ],
+  },
+  {
+    id: 'elite',
+    name: 'Elite Case',
+    price: 3000,
+    rarity: 'Elite',
+    items: [
+      { id: '8', name: 'Souvenir AWP', rarity: 'Mythic',    value: 10000, emoji: '🎯' },
+      { id: '9', name: 'Golden AK',    rarity: 'Legendary', value: 6000,  emoji: '👑' },
+    ],
+  },
+  {
+    id: 'special',
+    name: 'Special Case',
+    price: 5000,
+    rarity: 'Special',
+    items: [
+      { id: '10', name: 'Dragon Crimson', rarity: 'Divine', value: 15000, emoji: '🔥' },
+      { id: '11', name: 'Diamond M4',     rarity: 'Divine', value: 12000, emoji: '💠' },
+    ],
+  },
+]
+
+const TELEGRAM_GIFTS: TelegramGift[] = [
+  { id: 'g1', name: 'Blue Gem',       description: 'Rare blue diamond', rarity: 'Classic', value: 500,  emoji: '💎', price: 500  },
+  { id: 'g2', name: 'Pink Star',      description: 'Shining pink gem',  rarity: 'Premium', value: 1000, emoji: '⭐', price: 1000 },
+  { id: 'g3', name: 'Golden Crown',   description: 'Royal crown',       rarity: 'Rare',    value: 2000, emoji: '👑', price: 2000 },
+  { id: 'g4', name: 'Diamond Trinity',description: 'Triple diamond',    rarity: 'Special', value: 5000, emoji: '🔷', price: 5000 },
+]
+
+const DAILY_REWARDS: DailyReward[] = [
+  { day: 1, coins: 500,  items: [] },
+  { day: 2, coins: 750,  items: [] },
+  { day: 3, coins: 1000, items: [{ name: 'Blue Gem',   emoji: '💎', value: 500  }] },
+  { day: 4, coins: 1250, items: [] },
+  { day: 5, coins: 1500, items: [] },
+  { day: 6, coins: 2000, items: [{ name: 'Pink Star',  emoji: '⭐', value: 1000 }] },
+  { day: 7, coins: 3000, items: [{ name: 'Premium Case', emoji: '🎁', value: 1000 }] },
+]
+
+// ==================================================================
+// UTILS
+// ==================================================================
+const DAY_MS  = 24 * 60 * 60 * 1000
+const WEEK_MS = 7 * DAY_MS
+const STORAGE_KEY = 'cs2_game_v1'
+
+const fmt = (n: number): string => {
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M'
+  if (n >= 1_000)     return (n / 1_000).toFixed(1) + 'K'
+  return n.toString()
+}
+
+const formatDuration = (ms: number): string => {
+  if (ms <= 0) return '00:00:00'
+  const h = Math.floor(ms / 3_600_000)
+  const m = Math.floor((ms % 3_600_000) / 60_000)
+  const s = Math.floor((ms % 60_000) / 1_000)
+  return [h, m, s].map(v => v.toString().padStart(2, '0')).join(':')
+}
+
+const uid = () => `id_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+
+// ==================================================================
+// STORAGE
+// ==================================================================
+const DEFAULT_STATE: PersistedState = {
+  coins: 50000,
+  inventory: [],
+  lastDailyClaim: 0,
+  dailyStreak: 0,
+  lastWeeklyClaim: 0,
+  rewardsCount: 0,
+}
+
+const loadState = (): PersistedState => {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (!raw) return { ...DEFAULT_STATE }
+    return { ...DEFAULT_STATE, ...(JSON.parse(raw) as Partial<PersistedState>) }
+  } catch {
+    return { ...DEFAULT_STATE }
+  }
+}
+
+const saveState = (s: PersistedState) => {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)) } catch { /* ignore */ }
+}
+
+const getTgUser = (): TgUser => {
+  const tg = window.Telegram?.WebApp?.initDataUnsafe?.user
+  if (tg) {
+    return {
+      id: String(tg.id),
+      username: tg.username || `User${tg.id}`,
+      avatar: tg.photo_url || '👤',
+    }
+  }
+  return { id: 'test', username: 'TestUser', avatar: '👤' }
+}
+
+// ==================================================================
+// CONTEXT
+// ==================================================================
+interface GameContextType {
+  user: TgUser & { coins: number }
+  state: PersistedState
+  now: number
+  page: Page
+  navigate: (p: Page) => void
+  toast: (msg: string) => void
+
+  claimDaily: () => void
+  claimWeekly: () => void
+  openCase: (c: CS2Case) => CaseItem | null
+  buyGift: (g: TelegramGift) => boolean
+  sellItem: (id: string) => void
+  combineItems: (ids: string[]) => void
+  resetGame: () => void
+
+  canClaimDaily: boolean
+  canClaimWeekly: boolean
+  nextDailyDay: number
+  timeUntilDaily: number
+  timeUntilWeekly: number
+}
+
+const GameContext = createContext<GameContextType | null>(null)
+
+const useGame = (): GameContextType => {
+  const ctx = useContext(GameContext)
+  if (!ctx) throw new Error('useGame must be used inside <GameProvider>')
+  return ctx
+}
+
+// ==================================================================
+// SHARED UI
+// ==================================================================
+const RARITY_STYLES: Record<string, { grad: string; text: string; border: string }> = {
+  Standard: { grad: 'from-blue-500 to-blue-700',   text: 'text-blue-300',   border: 'border-blue-500/40'   },
+  Premium:  { grad: 'from-purple-500 to-pink-600', text: 'text-purple-300', border: 'border-purple-500/40' },
+  Elite:    { grad: 'from-yellow-400 to-orange-600',text: 'text-yellow-300',border: 'border-yellow-500/40' },
+  Special:  { grad: 'from-red-500 to-pink-700',    text: 'text-red-300',    border: 'border-red-500/40'    },
+  Classic:  { grad: 'from-blue-400 to-blue-600',   text: 'text-blue-300',   border: 'border-blue-500/40'   },
+  Rare:     { grad: 'from-yellow-300 to-orange-500',text: 'text-yellow-300',border: 'border-yellow-500/40' },
+  Common:   { grad: 'from-gray-500 to-gray-700',   text: 'text-gray-300',   border: 'border-gray-500/40'   },
+  Uncommon: { grad: 'from-green-500 to-emerald-700',text: 'text-green-300', border: 'border-green-500/40'  },
+  Epic:     { grad: 'from-violet-500 to-purple-700',text: 'text-violet-300',border: 'border-violet-500/40' },
+  Legendary:{ grad: 'from-orange-400 to-red-600',  text: 'text-orange-300', border: 'border-orange-500/40' },
+  Mythic:   { grad: 'from-pink-500 to-rose-700',   text: 'text-pink-300',   border: 'border-pink-500/40'   },
+  Divine:   { grad: 'from-amber-300 to-yellow-500',text: 'text-amber-300',  border: 'border-amber-500/40'  },
+}
+const rarityStyle = (r: string) =>
+  RARITY_STYLES[r] ?? { grad: 'from-gray-500 to-gray-700', text: 'text-gray-300', border: 'border-gray-500/40' }
+
+const PageHeader: React.FC<{ title: string; accent?: string; onBack?: () => void }> = ({
+  title, accent = 'text-[#a855f7]', onBack,
+}) => (
+  <motion.div
+    initial={{ opacity: 0, y: -10 }}
+    animate={{ opacity: 1, y: 0 }}
+    className="sticky top-0 z-20 bg-[#0a0a15]/90 backdrop-blur border-b border-white/10 p-4 flex items-center gap-3"
+  >
+    {onBack && (
+      <button onClick={onBack} className={accent}>
+        <ChevronLeft className="w-6 h-6" />
+      </button>
+    )}
+    <h2 className="text-xl font-bold">{title}</h2>
+  </motion.div>
+)
+
+const BottomNav: React.FC = () => {
+  const { page, navigate } = useGame()
+  const items: { id: Page; icon: React.ReactNode; label: string }[] = [
+    { id: 'home',      icon: <Home className="w-5 h-5" />,    label: 'Главная'  },
+    { id: 'cases',     icon: <Package className="w-5 h-5" />, label: 'Кейсы'    },
+    { id: 'gifts',     icon: <Gift className="w-5 h-5" />,    label: 'Подарки'  },
+    { id: 'inventory', icon: <Box className="w-5 h-5" />,     label: 'Инвентарь'},
+    { id: 'profile',   icon: <User className="w-5 h-5" />,    label: 'Профиль'  },
+  ]
+  return (
+    <div className="fixed bottom-0 left-0 right-0 z-30 max-w-md mx-auto">
+      <div className="bg-[#141428]/95 backdrop-blur border-t border-white/10 grid grid-cols-5">
+        {items.map(it => {
+          const active = page === it.id
+          return (
+            <button
+              key={it.id}
+              onClick={() => navigate(it.id)}
+              className={`py-3 flex flex-col items-center gap-1 text-[10px] transition ${
+                active ? 'text-[#a855f7]' : 'text-gray-500 hover:text-gray-300'
+              }`}
+            >
+              {it.icon}
+              <span>{it.label}</span>
+              {active && <div className="absolute top-0 w-6 h-0.5 bg-[#a855f7] rounded-full" />}
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+const Toast: React.FC<{ msg: string }> = ({ msg }) => (
+  <motion.div
+    initial={{ opacity: 0, y: -20 }}
+    animate={{ opacity: 1, y: 0 }}
+    exit={{ opacity: 0, y: -20 }}
+    className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] bg-[#1a1a2e] border border-[#a855f7]/50 px-4 py-2 rounded-lg text-sm font-medium shadow-[0_0_20px_rgba(168,85,247,0.4)]"
+  >
+    {msg}
+  </motion.div>
+)
+
+const ItemCardImage: React.FC<{ rarity: string; emoji: string; floating?: boolean }> = ({
+  rarity, emoji, floating = true,
+}) => {
+  const s = rarityStyle(rarity)
+  return (
+    <div className={`bg-gradient-to-br ${s.grad} w-full h-28 rounded-lg flex items-center justify-center relative overflow-hidden`}>
+      <div className="absolute inset-0 bg-black/30" />
+      <motion.div
+        animate={floating ? { y: [-4, 4, -4] } : undefined}
+        transition={floating ? { duration: 2, repeat: Infinity } : undefined}
+        className="relative z-10 text-5xl drop-shadow-lg"
+      >
+        {emoji}
+      </motion.div>
+    </div>
+  )
+}
+
+// ==================================================================
+// PAGES
+// ==================================================================
+const HomePage: React.FC = () => {
+  const { user, navigate, state, canClaimDaily, canClaimWeekly,
+          nextDailyDay, timeUntilDaily, timeUntilWeekly, claimDaily, claimWeekly, toast } = useGame()
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
+    <div className="pb-24">
+      <div className="bg-gradient-to-b from-[#141428] to-transparent p-4 border-b border-white/10">
+        <div className="flex items-center justify-between mb-4">
+          <button onClick={() => navigate('profile')} className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-[#a855f7]/30 flex items-center justify-center text-xl">
+              {user.avatar}
+            </div>
+            <div className="text-left">
+              <p className="text-xs text-gray-400">@{user.username}</p>
+              <p className="text-sm font-semibold text-white">{user.username}</p>
+            </div>
+          </button>
+          <div className="flex items-center gap-2 bg-[#a855f7]/20 px-3 py-2 rounded-lg border border-[#a855f7]/40">
+            <Coins className="w-5 h-5 text-[#fbbf24]" />
+            <span className="font-bold text-[#fbbf24]">{fmt(user.coins)}</span>
+          </div>
         </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
+        <motion.button
+          whileTap={{ scale: 0.97 }}
+          onClick={() => navigate('daily')}
+          className="w-full bg-gradient-to-r from-[#a855f7] to-[#ec4899] py-2 rounded-lg font-semibold text-sm hover:shadow-[0_0_20px_rgba(168,85,247,0.5)] transition"
         >
-          Count is {count}
+          {canClaimDaily ? '🎁 Получить ежедневную награду' : `Через ${formatDuration(timeUntilDaily)}`}
+        </motion.button>
+      </div>
+
+      <div className="relative p-4 m-4 rounded-xl overflow-hidden border border-[#a855f7]/30 bg-gradient-to-br from-[#a855f7]/20 to-[#3b82f6]/10">
+        <div className="flex justify-between items-center">
+          <div>
+            <h2 className="text-2xl font-bold bg-gradient-to-r from-[#a855f7] to-[#ec4899] bg-clip-text text-transparent mb-2">
+              Открывай кейсы
+            </h2>
+            <p className="text-sm text-gray-300 mb-3">
+              и получай крутые <span className="text-[#ec4899] font-bold">награды!</span>
+            </p>
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={() => navigate('cases')}
+              className="bg-[#a855f7] hover:bg-[#a855f7]/80 px-6 py-2 rounded-lg font-semibold text-sm flex items-center gap-2 transition"
+            >
+              Перейти <ChevronRight className="w-4 h-4" />
+            </motion.button>
+          </div>
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 8, repeat: Infinity, ease: 'linear' }}
+            className="text-6xl"
+          >
+            🎁
+          </motion.div>
+        </div>
+      </div>
+
+      <div className="px-4 py-4 space-y-6">
+        <div className="bg-gradient-to-br from-[#fbbf24]/15 to-[#a855f7]/15 p-4 rounded-xl border border-[#fbbf24]/30">
+          <div className="flex justify-between items-start mb-3">
+            <div>
+              <h3 className="text-lg font-bold text-[#fbbf24] mb-1">📅 Weekly Drop</h3>
+              <p className="text-xs text-gray-400">Premium Case + 5000 Coins</p>
+            </div>
+            <div className="text-right">
+              <p className="text-xs text-gray-400">Осталось</p>
+              <p className="text-sm font-bold text-[#fbbf24] font-mono">
+                {canClaimWeekly ? 'Готово!' : formatDuration(timeUntilWeekly)}
+              </p>
+            </div>
+          </div>
+          <motion.button
+            whileTap={{ scale: 0.98 }}
+            disabled={!canClaimWeekly}
+            onClick={() => { claimWeekly(); toast('Weekly Drop получен!') }}
+            className={`w-full py-2 rounded-lg font-semibold text-sm transition ${
+              canClaimWeekly
+                ? 'bg-[#fbbf24]/30 hover:bg-[#fbbf24]/40 text-[#fbbf24]'
+                : 'bg-gray-700/40 text-gray-500 cursor-not-allowed'
+            }`}
+          >
+            {canClaimWeekly ? 'Забрать награду' : 'Недоступно'}
+          </motion.button>
+        </div>
+
+        <div>
+          <div className="flex justify-between items-center mb-3">
+            <h3 className="text-lg font-bold">CS2 Кейсы</h3>
+            <button onClick={() => navigate('cases')} className="text-[#a855f7] text-sm">Все →</button>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            {CS2_CASES.slice(0, 2).map(c => (
+              <button key={c.id} onClick={() => navigate('cases')} className="text-left">
+                <div className="bg-[#1a1a2e] rounded-lg overflow-hidden border border-white/10 hover:border-[#a855f7]/50 transition">
+                  <ItemCardImage rarity={c.rarity} emoji="📦" />
+                  <div className="p-3">
+                    <p className="text-sm font-semibold text-white truncate">{c.name}</p>
+                    <div className="flex justify-between items-center mt-2">
+                      <span className="text-xs text-gray-400">{c.rarity}</span>
+                      <span className="text-[#fbbf24] font-bold text-sm flex items-center gap-1">
+                        <Coins className="w-3 h-3" /> {c.price}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <div className="flex justify-between items-center mb-3">
+            <h3 className="text-lg font-bold">Подарки</h3>
+            <button onClick={() => navigate('gifts')} className="text-[#a855f7] text-sm">Все →</button>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            {TELEGRAM_GIFTS.slice(0, 2).map(g => (
+              <button key={g.id} onClick={() => navigate('gifts')} className="text-left">
+                <div className="bg-[#1a1a2e] rounded-lg overflow-hidden border border-white/10 hover:border-[#3b82f6]/50 transition">
+                  <ItemCardImage rarity={g.rarity} emoji={g.emoji} />
+                  <div className="p-3">
+                    <p className="text-sm font-semibold text-white truncate">{g.name}</p>
+                    <div className="flex justify-between items-center mt-2">
+                      <span className="text-xs text-gray-400">{g.rarity}</span>
+                      <span className="text-[#fbbf24] font-bold text-sm">{g.value}</span>
+                    </div>
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="bg-gradient-to-br from-[#3b82f6]/15 to-[#a855f7]/15 p-4 rounded-xl border border-[#3b82f6]/30">
+          <div className="flex justify-between items-center mb-3">
+            <div>
+              <h3 className="text-lg font-bold text-[#3b82f6] mb-1">🎁 Ежедневный Бонус</h3>
+              <p className="text-xs text-gray-400">День {nextDailyDay} из 7</p>
+            </div>
+            <div className="text-right">
+              <p className="text-xs text-gray-400">{canClaimDaily ? 'Доступно' : 'Через'}</p>
+              <p className="text-sm font-bold text-[#3b82f6] font-mono">
+                {canClaimDaily ? 'Сейчас' : formatDuration(timeUntilDaily)}
+              </p>
+            </div>
+          </div>
+          <motion.button
+            whileTap={{ scale: 0.98 }}
+            disabled={!canClaimDaily}
+            onClick={() => { claimDaily(); toast(`День ${nextDailyDay} получен!`) }}
+            className={`w-full py-2 rounded-lg font-semibold text-sm transition ${
+              canClaimDaily
+                ? 'bg-[#3b82f6]/30 hover:bg-[#3b82f6]/40 text-[#3b82f6]'
+                : 'bg-gray-700/40 text-gray-500 cursor-not-allowed'
+            }`}
+          >
+            {canClaimDaily ? 'Забрать' : 'Недоступно'}
+          </motion.button>
+        </div>
+
+        <div className="grid grid-cols-3 gap-2">
+          {[
+            { icon: <Box className="w-5 h-5" />,   label: 'Инвентарь', action: 'inventory'   as Page },
+            { icon: <Zap className="w-5 h-5" />,   label: 'Апгрейдер', action: 'upgrade'     as Page },
+            { icon: <Trophy className="w-5 h-5" />,label: 'Турниры',   action: 'tournaments' as Page },
+          ].map(l => (
+            <button
+              key={l.action}
+              onClick={() => navigate(l.action)}
+              className="bg-[#1a1a2e] rounded-lg p-3 border border-white/10 hover:border-[#a855f7]/50 transition flex flex-col items-center gap-2"
+            >
+              <div className="text-[#a855f7]">{l.icon}</div>
+              <p className="text-xs font-semibold">{l.label}</p>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+const CasesPage: React.FC = () => {
+  const { navigate, user, openCase, toast } = useGame()
+  const [opening, setOpening] = useState<{ c: CS2Case; result: CaseItem; phase: 'rolling' | 'result' } | null>(null)
+  const [rollEmoji, setRollEmoji] = useState('📦')
+  const [detail, setDetail] = useState<CS2Case | null>(null)
+
+  useEffect(() => {
+    if (!opening || opening.phase !== 'rolling') return
+    const items = opening.c.items
+    const i = setInterval(() => {
+      setRollEmoji(items[Math.floor(Math.random() * items.length)].emoji)
+    }, 70)
+    const t = setTimeout(() => {
+      setOpening(o => o ? { ...o, phase: 'result' } : null)
+    }, 2200)
+    return () => { clearInterval(i); clearTimeout(t) }
+  }, [opening?.phase, opening?.c])
+
+  const handleOpen = (c: CS2Case) => {
+    if (user.coins < c.price) { toast('Недостаточно монет'); return }
+    const result = openCase(c)
+    if (!result) { toast('Недостаточно монет'); return }
+    setDetail(null)
+    setOpening({ c, result, phase: 'rolling' })
+  }
+
+  return (
+    <div className="pb-24">
+      <PageHeader title="CS2 Кейсы" onBack={() => navigate('home')} />
+
+      <div className="p-4 space-y-6">
+        {(['Standard', 'Premium', 'Elite', 'Special'] as CaseRarity[]).map(rar => {
+          const list = CS2_CASES.filter(c => c.rarity === rar)
+          if (list.length === 0) return null
+          return (
+            <div key={rar}>
+              <h3 className="text-sm font-bold text-[#a855f7] mb-3">{rar}</h3>
+              <div className="space-y-3">
+                {list.map(c => (
+                  <button key={c.id} onClick={() => setDetail(c)} className="w-full text-left">
+                    <div className="bg-[#1a1a2e] rounded-lg border border-white/10 hover:border-[#a855f7]/50 transition p-4 grid grid-cols-3 gap-4 items-center">
+                      <div className="col-span-1"><ItemCardImage rarity={c.rarity} emoji="📦" /></div>
+                      <div className="col-span-1">
+                        <p className="font-semibold text-white mb-1">{c.name}</p>
+                        <p className="text-xs text-gray-400 mb-2">{c.items.length} предметов</p>
+                        <div className="flex items-center gap-1 text-[#fbbf24] font-bold text-sm">
+                          <Coins className="w-4 h-4" /> {c.price}
+                        </div>
+                      </div>
+                      <div className="col-span-1 flex justify-end">
+                        <ChevronRight className="w-5 h-5 text-[#a855f7]" />
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      <AnimatePresence>
+        {detail && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 z-50 flex items-end"
+            onClick={() => setDetail(null)}
+          >
+            <motion.div
+              initial={{ y: 400 }} animate={{ y: 0 }} exit={{ y: 400 }}
+              transition={{ type: 'spring', damping: 25 }}
+              onClick={e => e.stopPropagation()}
+              className="bg-[#141428] w-full rounded-t-2xl p-5 max-h-[85vh] overflow-y-auto"
+            >
+              <div className="flex justify-between items-center mb-5">
+                <h3 className="text-xl font-bold">{detail.name}</h3>
+                <button onClick={() => setDetail(null)} className="text-gray-400">
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+              <ItemCardImage rarity={detail.rarity} emoji="📦" />
+              <div className="mt-5 space-y-2">
+                <h4 className="font-bold text-[#a855f7] text-sm">Содержимое:</h4>
+                {detail.items.map(i => (
+                  <div key={i.id} className="bg-[#0a0a15] p-3 rounded-lg flex items-center justify-between border border-white/10">
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">{i.emoji}</span>
+                      <div>
+                        <p className="font-semibold text-white text-sm">{i.name}</p>
+                        <p className="text-xs text-gray-400">{i.rarity}</p>
+                      </div>
+                    </div>
+                    <span className="text-[#fbbf24] font-bold">${i.value}</span>
+                  </div>
+                ))}
+              </div>
+              <motion.button
+                whileTap={{ scale: 0.98 }}
+                onClick={() => handleOpen(detail)}
+                className="w-full mt-5 bg-gradient-to-r from-[#a855f7] to-[#ec4899] py-3 rounded-lg font-bold text-white hover:shadow-[0_0_20px_rgba(168,85,247,0.5)] transition"
+              >
+                Открыть за {detail.price} монет
+              </motion.button>
+              <p className="text-center text-xs text-gray-400 mt-2">У тебя: {fmt(user.coins)} монет</p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {opening && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/90 z-[60] flex items-center justify-center p-6"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="bg-[#141428] rounded-2xl p-6 w-full max-w-sm border border-[#a855f7]/40"
+            >
+              {opening.phase === 'rolling' ? (
+                <>
+                  <p className="text-center text-gray-400 text-sm mb-4">Открываем...</p>
+                  <motion.div
+                    key={rollEmoji}
+                    initial={{ scale: 0.6, opacity: 0.5 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    className="text-8xl text-center py-8"
+                  >
+                    {rollEmoji}
+                  </motion.div>
+                  <div className="h-1 bg-[#a855f7]/20 rounded-full overflow-hidden">
+                    <motion.div
+                      initial={{ width: '0%' }} animate={{ width: '100%' }}
+                      transition={{ duration: 2.2 }}
+                      className="h-full bg-gradient-to-r from-[#a855f7] to-[#ec4899]"
+                    />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p className="text-center text-gray-400 text-sm mb-2">Выпало:</p>
+                  <motion.div
+                    initial={{ scale: 0.5, rotate: -20 }}
+                    animate={{ scale: 1, rotate: 0 }}
+                    transition={{ type: 'spring', damping: 12 }}
+                    className="text-8xl text-center py-6"
+                  >
+                    {opening.result.emoji}
+                  </motion.div>
+                  <p className="text-center text-xl font-bold text-white">{opening.result.name}</p>
+                  <p className={`text-center text-sm font-semibold mb-2 ${rarityStyle(opening.result.rarity).text}`}>
+                    {opening.result.rarity}
+                  </p>
+                  <p className="text-center text-[#fbbf24] font-bold mb-5">${opening.result.value}</p>
+                  <motion.button
+                    whileTap={{ scale: 0.97 }}
+                    onClick={() => setOpening(null)}
+                    className="w-full bg-gradient-to-r from-[#a855f7] to-[#ec4899] py-3 rounded-lg font-bold"
+                  >
+                    Забрать
+                  </motion.button>
+                </>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}
+
+const GiftsPage: React.FC = () => {
+  const { navigate, state, buyGift, toast } = useGame()
+  const [detail, setDetail] = useState<TelegramGift | null>(null)
+
+  const ownedCount = (id: string) =>
+    state.inventory.filter(i => i.type === 'gift' && i.source === id).length
+
+  return (
+    <div className="pb-24">
+      <PageHeader title="Подарки" accent="text-[#3b82f6]" onBack={() => navigate('home')} />
+
+      <div className="p-4 space-y-6">
+        {(['Classic', 'Premium', 'Rare', 'Special'] as GiftRarity[]).map(rar => {
+          const list = TELEGRAM_GIFTS.filter(g => g.rarity === rar)
+          if (!list.length) return null
+          return (
+            <div key={rar}>
+              <h3 className="text-sm font-bold text-[#3b82f6] mb-3">{rar}</h3>
+              <div className="grid grid-cols-2 gap-3">
+                {list.map(g => {
+                  const owned = ownedCount(g.id)
+                  return (
+                    <button key={g.id} onClick={() => setDetail(g)} className="text-left">
+                      <div className="bg-[#1a1a2e] rounded-lg overflow-hidden border border-white/10 hover:border-[#3b82f6]/50 transition relative">
+                        <ItemCardImage rarity={g.rarity} emoji={g.emoji} />
+                        <div className="p-3">
+                          <p className="text-sm font-semibold text-white truncate">{g.name}</p>
+                          <div className="flex justify-between items-center mt-2">
+                            <span className="text-xs text-gray-400">{g.rarity}</span>
+                            <span className="text-[#fbbf24] font-bold text-sm">{g.price}</span>
+                          </div>
+                        </div>
+                        {owned > 0 && (
+                          <div className="absolute top-2 right-2 bg-green-500 rounded-full px-2 py-0.5 text-[10px] font-bold text-white">
+                            ×{owned}
+                          </div>
+                        )}
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      <AnimatePresence>
+        {detail && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 z-50 flex items-end"
+            onClick={() => setDetail(null)}
+          >
+            <motion.div
+              initial={{ y: 400 }} animate={{ y: 0 }} exit={{ y: 400 }}
+              transition={{ type: 'spring', damping: 25 }}
+              onClick={e => e.stopPropagation()}
+              className="bg-[#141428] w-full rounded-t-2xl p-5 max-h-[85vh] overflow-y-auto"
+            >
+              <div className="flex justify-between items-center mb-5">
+                <h3 className="text-xl font-bold">{detail.name}</h3>
+                <button onClick={() => setDetail(null)} className="text-gray-400">
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+              <ItemCardImage rarity={detail.rarity} emoji={detail.emoji} />
+              <p className="text-center text-gray-300 text-sm mt-3">{detail.description}</p>
+              <div className="flex justify-between text-sm mt-3">
+                <span className="text-gray-400">Редкость:</span>
+                <span className={rarityStyle(detail.rarity).text}>{detail.rarity}</span>
+              </div>
+              <div className="flex justify-between text-sm mt-1">
+                <span className="text-gray-400">Стоимость:</span>
+                <span className="text-[#fbbf24] font-bold">${detail.value}</span>
+              </div>
+              <motion.button
+                whileTap={{ scale: 0.98 }}
+                onClick={() => {
+                  if (buyGift(detail)) {
+                    toast(`Куплено: ${detail.name}`)
+                    setDetail(null)
+                  } else {
+                    toast('Недостаточно монет')
+                  }
+                }}
+                className="w-full mt-5 bg-gradient-to-r from-[#3b82f6] to-[#a855f7] py-3 rounded-lg font-bold"
+              >
+                Купить за {detail.price} монет
+              </motion.button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}
+
+const InventoryPage: React.FC = () => {
+  const { navigate, state, sellItem, toast } = useGame()
+  const [detail, setDetail] = useState<InventoryItem | null>(null)
+
+  const totalValue = useMemo(
+    () => state.inventory.reduce((s, i) => s + i.value, 0),
+    [state.inventory]
+  )
+
+  return (
+    <div className="pb-24">
+      <PageHeader title="Инвентарь" onBack={() => navigate('home')} />
+
+      <div className="p-4">
+        <div className="bg-[#1a1a2e] rounded-xl border border-white/10 p-4 mb-4 flex justify-between">
+          <div>
+            <p className="text-xs text-gray-400">Предметов</p>
+            <p className="text-xl font-bold text-white">{state.inventory.length}</p>
+          </div>
+          <div className="text-right">
+            <p className="text-xs text-gray-400">Общая стоимость</p>
+            <p className="text-xl font-bold text-[#fbbf24]">${fmt(totalValue)}</p>
+          </div>
+        </div>
+
+        {state.inventory.length === 0 ? (
+          <div className="text-center py-16 text-gray-500">
+            <Box className="w-16 h-16 mx-auto mb-3 opacity-30" />
+            <p>Инвентарь пуст</p>
+            <button onClick={() => navigate('cases')} className="mt-4 text-[#a855f7] text-sm underline">
+              Открыть кейс
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-3">
+            {[...state.inventory].reverse().map(item => (
+              <button key={item.id} onClick={() => setDetail(item)} className="text-left">
+                <div className="bg-[#1a1a2e] rounded-lg overflow-hidden border border-white/10 hover:border-[#a855f7]/50 transition">
+                  <ItemCardImage rarity={item.rarity} emoji={item.emoji} floating={false} />
+                  <div className="p-3">
+                    <p className="text-sm font-semibold text-white truncate">{item.name}</p>
+                    <div className="flex justify-between items-center mt-1">
+                      <span className={`text-[10px] ${rarityStyle(item.rarity).text}`}>{item.rarity}</span>
+                      <span className="text-[#fbbf24] font-bold text-sm">${item.value}</span>
+                    </div>
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <AnimatePresence>
+        {detail && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 z-50 flex items-end"
+            onClick={() => setDetail(null)}
+          >
+            <motion.div
+              initial={{ y: 400 }} animate={{ y: 0 }} exit={{ y: 400 }}
+              transition={{ type: 'spring', damping: 25 }}
+              onClick={e => e.stopPropagation()}
+              className="bg-[#141428] w-full rounded-t-2xl p-5"
+            >
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-bold">{detail.name}</h3>
+                <button onClick={() => setDetail(null)} className="text-gray-400">
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+              <ItemCardImage rarity={detail.rarity} emoji={detail.emoji} floating={false} />
+              <div className="mt-4 space-y-1 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Редкость:</span>
+                  <span className={rarityStyle(detail.rarity).text}>{detail.rarity}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Стоимость:</span>
+                  <span className="text-[#fbbf24] font-bold">${detail.value}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Источник:</span>
+                  <span className="text-white">{detail.source}</span>
+                </div>
+              </div>
+              <motion.button
+                whileTap={{ scale: 0.98 }}
+                onClick={() => {
+                  const value = detail.value
+                  sellItem(detail.id)
+                  setDetail(null)
+                  toast(`Продано за ${value} монет`)
+                }}
+                className="w-full mt-5 bg-gradient-to-r from-green-500 to-emerald-600 py-3 rounded-lg font-bold"
+              >
+                Продать за ${detail.value}
+              </motion.button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}
+
+const UpgradePage: React.FC = () => {
+  const { navigate, state, combineItems, toast } = useGame()
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
+
+  const toggle = (id: string) => {
+    setSelectedIds(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    )
+  }
+
+  const selected = state.inventory.filter(i => selectedIds.includes(i.id))
+  const totalValue = selected.reduce((s, i) => s + i.value, 0)
+  const combinedValue = Math.round(totalValue * 1.15)
+
+  const handleCombine = () => {
+    if (selected.length < 2) { toast('Выбери минимум 2 предмета'); return }
+    combineItems(selectedIds)
+    setSelectedIds([])
+  }
+
+  return (
+    <div className="pb-24">
+      <PageHeader title="Апгрейдер" accent="text-[#ec4899]" onBack={() => navigate('home')} />
+
+      <div className="p-4">
+        <div className="bg-[#1a1a2e] rounded-xl border border-[#ec4899]/30 p-4 mb-4">
+          <div className="flex justify-between items-center">
+            <div>
+              <p className="text-xs text-gray-400">Выбрано</p>
+              <p className="text-xl font-bold text-white">{selected.length} / 2+</p>
+            </div>
+            <div className="text-right">
+              <p className="text-xs text-gray-400">Итоговая стоимость</p>
+              <p className="text-xl font-bold text-[#ec4899]">${selected.length ? combinedValue : 0}</p>
+            </div>
+          </div>
+          <p className="text-[10px] text-gray-400 mt-2">Комбинирование даёт +15% к стоимости</p>
+        </div>
+
+        {state.inventory.length < 2 ? (
+          <div className="text-center py-16 text-gray-500">
+            <Zap className="w-16 h-16 mx-auto mb-3 opacity-30" />
+            <p>Нужно минимум 2 предмета для апгрейда</p>
+            <button onClick={() => navigate('cases')} className="mt-4 text-[#a855f7] text-sm underline">
+              Открыть кейс
+            </button>
+          </div>
+        ) : (
+          <>
+            <p className="text-sm text-gray-400 mb-2">Выбери предметы:</p>
+            <div className="grid grid-cols-3 gap-2 mb-4">
+              {state.inventory.map(item => {
+                const isSel = selectedIds.includes(item.id)
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => toggle(item.id)}
+                    className={`rounded-lg border-2 p-2 bg-[#1a1a2e] transition ${
+                      isSel ? 'border-[#ec4899] ring-2 ring-[#ec4899]/30' : 'border-white/10'
+                    }`}
+                  >
+                    <div className="text-3xl text-center py-1">{item.emoji}</div>
+                    <p className="text-[10px] text-white truncate">{item.name}</p>
+                    <p className="text-[10px] text-[#fbbf24] font-bold">${item.value}</p>
+                  </button>
+                )
+              })}
+            </div>
+            <motion.button
+              whileTap={{ scale: 0.98 }}
+              disabled={selected.length < 2}
+              onClick={handleCombine}
+              className={`w-full py-3 rounded-lg font-bold transition ${
+                selected.length >= 2
+                  ? 'bg-gradient-to-r from-[#ec4899] to-[#a855f7]'
+                  : 'bg-gray-700/40 text-gray-500 cursor-not-allowed'
+              }`}
+            >
+              Объединить
+            </motion.button>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
+const TournamentsPage: React.FC = () => {
+  const { navigate, now } = useGame()
+
+  const tournaments = [
+    { id: 1, name: 'Weekly CS2 Cup',   prize: '50000',    endsIn: 3 * 3600_000,  players: 128 },
+    { id: 2, name: 'Diamond Rush',     prize: '100000',   endsIn: 26 * 3600_000, players: 342 },
+    { id: 3, name: 'Premium League',   prize: '250000',   endsIn: 5 * DAY_MS,    players: 87  },
+  ]
+
+  return (
+    <div className="pb-24">
+      <PageHeader title="Турниры" onBack={() => navigate('home')} />
+      <div className="p-4 space-y-3">
+        {tournaments.map(t => (
+          <div key={t.id} className="bg-[#1a1a2e] rounded-xl border border-white/10 p-4">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#fbbf24] to-[#ec4899] flex items-center justify-center">
+                <Trophy className="w-6 h-6 text-white" />
+              </div>
+              <div className="flex-1">
+                <p className="font-bold text-white">{t.name}</p>
+                <p className="text-xs text-gray-400">{t.players} участников</p>
+              </div>
+            </div>
+            <div className="flex justify-between text-sm mb-3">
+              <span className="text-gray-400">Призовой фонд:</span>
+              <span className="text-[#fbbf24] font-bold">${t.prize}</span>
+            </div>
+            <button
+              onClick={() => alert('Турниры в разработке')}
+              className="w-full bg-[#3b82f6]/30 hover:bg-[#3b82f6]/40 text-[#3b82f6] py-2 rounded-lg text-sm font-semibold transition"
+            >
+              Участвовать
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+const DailyPage: React.FC = () => {
+  const { navigate, canClaimDaily, nextDailyDay, timeUntilDaily, claimDaily, toast, state } = useGame()
+
+  return (
+    <div className="pb-24">
+      <PageHeader title="Ежедневные награды" onBack={() => navigate('home')} />
+      <div className="p-4">
+        <div className="bg-gradient-to-br from-[#3b82f6]/20 to-[#a855f7]/20 rounded-xl border border-[#3b82f6]/30 p-4 mb-4">
+          <p className="text-sm text-gray-300 mb-1">Текущий прогресс</p>
+          <p className="text-2xl font-bold text-[#3b82f6]">День {nextDailyDay} из 7</p>
+          {!canClaimDaily && (
+            <p className="text-xs text-gray-400 mt-1">Следующая через {formatDuration(timeUntilDaily)}</p>
+          )}
+        </div>
+
+        <div className="grid grid-cols-2 gap-2">
+          {DAILY_REWARDS.map(r => {
+            const claimed = r.day <= state.dailyStreak && state.dailyStreak > 0 && r.day !== nextDailyDay
+            const isNext = r.day === nextDailyDay
+            const canClaim = isNext && canClaimDaily
+            return (
+              <div
+                key={r.day}
+                className={`rounded-lg border-2 p-3 text-center transition ${
+                  canClaim
+                    ? 'border-[#fbbf24] bg-[#fbbf24]/10 shadow-[0_0_15px_rgba(251,191,36,0.3)]'
+                    : claimed
+                      ? 'border-green-500/40 bg-green-500/5 opacity-60'
+                      : 'border-white/10 bg-[#1a1a2e]'
+                }`}
+              >
+                <p className="text-xs text-gray-400 mb-1">День {r.day}</p>
+                <div className="text-2xl mb-1">
+                  {claimed ? <Check className="w-6 h-6 text-green-500 mx-auto" /> : '🎁'}
+                </div>
+                <p className="text-sm font-bold text-[#fbbf24] flex items-center justify-center gap-1">
+                  <Coins className="w-3 h-3" /> {r.coins}
+                </p>
+                {r.items.length > 0 && (
+                  <p className="text-[10px] text-[#a855f7] mt-1">{r.items[0].emoji} {r.items[0].name}</p>
+                )}
+                {canClaim && (
+                  <motion.button
+                    whileTap={{ scale: 0.97 }}
+                    onClick={() => { claimDaily(); toast(`День ${r.day} получен!`) }}
+                    className="mt-2 w-full bg-[#fbbf24] text-black text-xs py-1 rounded font-bold"
+                  >
+                    Забрать
+                  </motion.button>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+const ProfilePage: React.FC = () => {
+  const { navigate, user, state, resetGame } = useGame()
+
+  return (
+    <div className="pb-24">
+      <PageHeader title="Профиль" onBack={() => navigate('home')} />
+      <div className="p-4">
+        <div className="bg-[#1a1a2e] rounded-xl border border-white/10 p-5 text-center mb-4">
+          <div className="w-20 h-20 rounded-full bg-[#a855f7]/30 flex items-center justify-center text-4xl mx-auto mb-3">
+            {user.avatar}
+          </div>
+          <p className="text-xl font-bold">@{user.username}</p>
+          <p className="text-xs text-gray-400">ID: {user.id}</p>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3 mb-4">
+          <div className="bg-[#1a1a2e] rounded-xl border border-white/10 p-3">
+            <Coins className="w-5 h-5 text-[#fbbf24] mb-1" />
+            <p className="text-xs text-gray-400">Монеты</p>
+            <p className="text-lg font-bold text-[#fbbf24]">{fmt(state.coins)}</p>
+          </div>
+          <div className="bg-[#1a1a2e] rounded-xl border border-white/10 p-3">
+            <Box className="w-5 h-5 text-[#a855f7] mb-1" />
+            <p className="text-xs text-gray-400">Предметов</p>
+            <p className="text-lg font-bold text-[#a855f7]">{state.inventory.length}</p>
+          </div>
+          <div className="bg-[#1a1a2e] rounded-xl border border-white/10 p-3">
+            <Star className="w-5 h-5 text-[#ec4899] mb-1" />
+            <p className="text-xs text-gray-400">Наград получено</p>
+            <p className="text-lg font-bold text-[#ec4899]">{state.rewardsCount}</p>
+          </div>
+          <div className="bg-[#1a1a2e] rounded-xl border border-white/10 p-3">
+            <Clock className="w-5 h-5 text-[#3b82f6] mb-1" />
+            <p className="text-xs text-gray-400">Дней подряд</p>
+            <p className="text-lg font-bold text-[#3b82f6]">{state.dailyStreak}</p>
+          </div>
+        </div>
+
+        <button
+          onClick={() => {
+            if (confirm('Сбросить весь прогресс? Это необратимо.')) {
+              resetGame()
+            }
+          }}
+          className="w-full bg-red-500/20 hover:bg-red-500/30 text-red-400 py-3 rounded-lg font-semibold transition border border-red-500/40"
+        >
+          Сбросить прогресс
         </button>
-      </section>
+      </div>
+    </div>
+  )
+}
 
-      <div className="ticks"></div>
+// ==================================================================
+// APP
+// ==================================================================
+const App: React.FC = () => {
+  const [state, setState] = useState<PersistedState>(() => loadState())
+  const [page, setPage] = useState<Page>('home')
+  const [now, setNow] = useState(() => Date.now())
+  const [toastMsg, setToastMsg] = useState<string | null>(null)
+  const toastTimer = useRef<number | null>(null)
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
+  const user = useMemo(() => getTgUser(), [])
+
+  useEffect(() => { saveState(state) }, [state])
+
+  useEffect(() => {
+    const t = window.setInterval(() => setNow(Date.now()), 1000)
+    return () => window.clearInterval(t)
+  }, [])
+
+  useEffect(() => {
+    window.Telegram?.WebApp?.ready?.()
+    window.Telegram?.WebApp?.expand?.()
+  }, [])
+
+  const toast = useCallback((msg: string) => {
+    setToastMsg(msg)
+    if (toastTimer.current) window.clearTimeout(toastTimer.current)
+    toastTimer.current = window.setTimeout(() => setToastMsg(null), 2200)
+  }, [])
+
+  const canClaimDaily = now - state.lastDailyClaim >= DAY_MS
+  const canClaimWeekly = now - state.lastWeeklyClaim >= WEEK_MS
+
+  const nextDailyDay = useMemo(() => {
+    if (!canClaimDaily) return state.dailyStreak || 1
+    if (state.lastDailyClaim === 0) return 1
+    if (now - state.lastDailyClaim > 2 * DAY_MS) return 1
+    if (state.dailyStreak >= 7) return 1
+    return state.dailyStreak + 1
+  }, [canClaimDaily, state.lastDailyClaim, state.dailyStreak, now])
+
+  const timeUntilDaily  = Math.max(0, state.lastDailyClaim + DAY_MS - now)
+  const timeUntilWeekly = Math.max(0, state.lastWeeklyClaim + WEEK_MS - now)
+
+  const claimDaily = useCallback(() => {
+    if (now - state.lastDailyClaim < DAY_MS) return
+    const day = nextDailyDay
+    const reward = DAILY_REWARDS[day - 1]
+    setState(s => ({
+      ...s,
+      coins: s.coins + reward.coins,
+      lastDailyClaim: Date.now(),
+      dailyStreak: day,
+      rewardsCount: s.rewardsCount + 1,
+      inventory: [
+        ...s.inventory,
+        ...reward.items.map(it => ({
+          id: uid(),
+          type: 'gift' as const,
+          name: it.name,
+          rarity: 'Premium',
+          value: it.value,
+          emoji: it.emoji,
+          obtainedAt: Date.now(),
+          source: `Daily Day ${day}`,
+        })),
+      ],
+    }))
+  }, [now, state.lastDailyClaim, nextDailyDay])
+
+  const claimWeekly = useCallback(() => {
+    if (now - state.lastWeeklyClaim < WEEK_MS) return
+    setState(s => ({
+      ...s,
+      coins: s.coins + 5000,
+      lastWeeklyClaim: Date.now(),
+      rewardsCount: s.rewardsCount + 1,
+      inventory: [
+        ...s.inventory,
+        {
+          id: uid(),
+          type: 'case',
+          name: 'Premium Case',
+          rarity: 'Premium',
+          value: 1000,
+          emoji: '🎁',
+          obtainedAt: Date.now(),
+          source: 'Weekly Drop',
+        },
+      ],
+    }))
+  }, [now, state.lastWeeklyClaim])
+
+  const openCase = useCallback((c: CS2Case): CaseItem | null => {
+    if (state.coins < c.price) return null
+    const item = c.items[Math.floor(Math.random() * c.items.length)]
+    const invItem: InventoryItem = {
+      id: uid(),
+      type: 'case',
+      name: item.name,
+      rarity: item.rarity,
+      value: item.value,
+      emoji: item.emoji,
+      obtainedAt: Date.now(),
+      source: c.name,
+    }
+    setState(s => ({
+      ...s,
+      coins: s.coins - c.price,
+      inventory: [...s.inventory, invItem],
+      rewardsCount: s.rewardsCount + 1,
+    }))
+    return item
+  }, [state.coins])
+
+  const buyGift = useCallback((g: TelegramGift): boolean => {
+    if (state.coins < g.price) return false
+    const invItem: InventoryItem = {
+      id: uid(),
+      type: 'gift',
+      name: g.name,
+      rarity: g.rarity,
+      value: g.value,
+      emoji: g.emoji,
+      obtainedAt: Date.now(),
+      source: g.id,
+    }
+    setState(s => ({
+      ...s,
+      coins: s.coins - g.price,
+      inventory: [...s.inventory, invItem],
+      rewardsCount: s.rewardsCount + 1,
+    }))
+    return true
+  }, [state.coins])
+
+  const sellItem = useCallback((id: string) => {
+    setState(s => {
+      const item = s.inventory.find(i => i.id === id)
+      if (!item) return s
+      return {
+        ...s,
+        coins: s.coins + item.value,
+        inventory: s.inventory.filter(i => i.id !== id),
+      }
+    })
+  }, [])
+
+  const combineItems = useCallback((ids: string[]) => {
+    if (ids.length < 2) return
+    setState(s => {
+      const items = s.inventory.filter(i => ids.includes(i.id))
+      if (items.length < 2) return s
+      const total = items.reduce((a, i) => a + i.value, 0)
+      const value = Math.round(total * 1.15)
+      const highest = items.reduce((a, b) => (a.value > b.value ? a : b))
+      const merged: InventoryItem = {
+        id: uid(),
+        type: 'gift',
+        name: `Combined ${highest.rarity}`,
+        rarity: highest.rarity,
+        value,
+        emoji: highest.emoji,
+        obtainedAt: Date.now(),
+        source: 'Upgrade',
+      }
+      return {
+        ...s,
+        inventory: [...s.inventory.filter(i => !ids.includes(i.id)), merged],
+      }
+    })
+  }, [])
+
+  const resetGame = useCallback(() => {
+    setState({ ...DEFAULT_STATE })
+    toast('Прогресс сброшен')
+  }, [toast])
+
+  const ctxValue: GameContextType = {
+    user: { ...user, coins: state.coins },
+    state,
+    now,
+    page,
+    navigate: setPage,
+    toast,
+    claimDaily,
+    claimWeekly,
+    openCase,
+    buyGift,
+    sellItem,
+    combineItems,
+    resetGame,
+    canClaimDaily,
+    canClaimWeekly,
+    nextDailyDay,
+    timeUntilDaily,
+    timeUntilWeekly,
+  }
+
+  return (
+    <GameContext.Provider value={ctxValue}>
+      <div className="min-h-screen bg-[#0a0a15] text-white font-sans selection:bg-[#a855f7]/40">
+        <div className="max-w-md mx-auto relative min-h-screen">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={page}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.15 }}
+            >
+              {page === 'home'        && <HomePage />}
+              {page === 'cases'       && <CasesPage />}
+              {page === 'gifts'       && <GiftsPage />}
+              {page === 'inventory'   && <InventoryPage />}
+              {page === 'upgrade'     && <UpgradePage />}
+              {page === 'tournaments' && <TournamentsPage />}
+              {page === 'daily'       && <DailyPage />}
+              {page === 'profile'     && <ProfilePage />}
+            </motion.div>
+          </AnimatePresence>
+
+          <BottomNav />
+
+          <AnimatePresence>
+            {toastMsg && <Toast msg={toastMsg} />}
+          </AnimatePresence>
         </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+      </div>
+    </GameContext.Provider>
   )
 }
 
