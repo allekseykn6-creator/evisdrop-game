@@ -1,1 +1,658 @@
+import React, { useState, useEffect } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import {
+  Home, Package, Gift, Zap, User, Coins, Clock, Gift as GiftIcon,
+  ChevronRight, Star, Trophy, Calendar, TrendingUp, Share2, Lock,
+  ChevronLeft, X, Check
+} from 'lucide-react'
 
+// ============= TYPES =============
+interface User {
+  id: string
+  username: string
+  avatar: string
+  coins: number
+  itemsCount: number
+  rewardsCount: number
+}
+
+interface CS2Case {
+  id: string
+  name: string
+  price: number
+  rarity: 'Standard' | 'Premium' | 'Elite' | 'Special'
+  items: CaseItem[]
+  image: string
+  color: string
+}
+
+interface CaseItem {
+  id: string
+  name: string
+  rarity: string
+  value: number
+  image: string
+}
+
+interface TelegramGift {
+  id: string
+  name: string
+  description: string
+  rarity: 'Classic' | 'Premium' | 'Rare' | 'Special'
+  value: number
+  image: string
+  obtained: boolean
+}
+
+interface DailyReward {
+  day: number
+  coins: number
+  items: string[]
+}
+
+interface WeeklyDrop {
+  id: string
+  title: string
+  reward: string
+  value: number
+  endsAt: number
+  claimed: boolean
+}
+
+interface InventoryItem {
+  id: string
+  type: 'case' | 'gift'
+  name: string
+  value: number
+  image: string
+  obtainedAt: number
+  source: string
+}
+
+interface UpgradeItem {
+  id: string
+  level: number
+  name: string
+  image: string
+  value: number
+  rarity: string
+}
+
+// ============= MOCK DATA =============
+const CS2_CASES: CS2Case[] = [
+  {
+    id: 'standard',
+    name: 'Standard Case',
+    price: 500,
+    rarity: 'Standard',
+    color: 'from-blue-500 to-blue-600',
+    image: 'cs2-standard',
+    items: [
+      { id: '1', name: 'Pistol Skin', rarity: 'Common', value: 50, image: 'pistol' },
+      { id: '2', name: 'Rifle Skin', rarity: 'Uncommon', value: 150, image: 'rifle' },
+      { id: '3', name: 'Knife Skin', rarity: 'Rare', value: 500, image: 'knife' },
+    ]
+  },
+  {
+    id: 'premium',
+    name: 'Premium Case',
+    price: 1000,
+    rarity: 'Premium',
+    color: 'from-purple-500 to-pink-500',
+    image: 'cs2-premium',
+    items: [
+      { id: '4', name: 'Dragon Lore', rarity: 'Epic', value: 2000, image: 'dragon' },
+      { id: '5', name: 'Fade Knife', rarity: 'Legendary', value: 5000, image: 'fade' },
+    ]
+  },
+  {
+    id: 'elite',
+    name: 'Elite Case',
+    price: 2000,
+    rarity: 'Elite',
+    color: 'from-yellow-400 to-orange-500',
+    image: 'cs2-elite',
+    items: [
+      { id: '6', name: 'Souvenir AWP', rarity: 'Mythic', value: 10000, image: 'awp' },
+    ]
+  },
+  {
+    id: 'special',
+    name: 'Special Case',
+    price: 2000,
+    rarity: 'Special',
+    color: 'from-red-500 to-pink-600',
+    image: 'cs2-special',
+    items: [
+      { id: '7', name: 'Dragon Crimson', rarity: 'Divine', value: 15000, image: 'crimson' },
+    ]
+  }
+]
+
+const TELEGRAM_GIFTS: TelegramGift[] = [
+  { id: 'g1', name: 'Blue Gem', description: 'Rare blue diamond', rarity: 'Classic', value: 500, image: 'gift-blue', obtained: true },
+  { id: 'g2', name: 'Pink Star', description: 'Shining pink gem', rarity: 'Premium', value: 1000, image: 'gift-pink', obtained: true },
+  { id: 'g3', name: 'Golden Crown', description: 'Royal crown', rarity: 'Rare', value: 2000, image: 'gift-gold', obtained: false },
+  { id: 'g4', name: 'Diamond Trinity', description: 'Triple diamond', rarity: 'Special', value: 5000, image: 'gift-trinity', obtained: false },
+]
+
+const DAILY_REWARDS: DailyReward[] = [
+  { day: 1, coins: 500, items: [] },
+  { day: 2, coins: 750, items: [] },
+  { day: 3, coins: 1000, items: ['Blue Gem'] },
+  { day: 4, coins: 1250, items: [] },
+  { day: 5, coins: 1500, items: [] },
+  { day: 6, coins: 2000, items: ['Pink Star'] },
+  { day: 7, coins: 3000, items: ['Legendary Case'] },
+]
+
+// ============= UTILITY FUNCTIONS =============
+const getStorageData = (key: string, defaultValue: any) => {
+  try {
+    const stored = localStorage.getItem(key)
+    return stored ? JSON.parse(stored) : defaultValue
+  } catch {
+    return defaultValue
+  }
+}
+
+const setStorageData = (key: string, value: any) => {
+  localStorage.setItem(key, JSON.stringify(value))
+}
+
+const getTelegramUser = (): User => {
+  if (window.Telegram?.WebApp?.initDataUnsafe?.user) {
+    const tgUser = window.Telegram.WebApp.initDataUnsafe.user
+    return {
+      id: tgUser.id.toString(),
+      username: tgUser.username || `User${tgUser.id}`,
+      avatar: tgUser.photo_url || '',
+      coins: getStorageData('userCoins', 50000),
+      itemsCount: getStorageData('inventory', []).length,
+      rewardsCount: getStorageData('rewardsClaimed', 0),
+    }
+  }
+  return {
+    id: '123456789',
+    username: 'TestUser',
+    avatar: '👤',
+    coins: 50000,
+    itemsCount: 15,
+    rewardsCount: 42,
+  }
+}
+
+const formatNumber = (num: number): string => {
+  if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M'
+  if (num >= 1000) return (num / 1000).toFixed(1) + 'K'
+  return num.toString()
+}
+
+const getTimeLeft = (endTime: number): string => {
+  const now = Date.now()
+  const diff = endTime - now
+  if (diff <= 0) return '00:00:00'
+  const hours = Math.floor(diff / 3600000)
+  const minutes = Math.floor((diff % 3600000) / 60000)
+  const seconds = Math.floor((diff % 60000) / 1000)
+  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+}
+
+// ============= COMPONENTS =============
+
+// 🎨 CSS для анимации кейсов
+const CaseCardImage: React.FC<{ rarity: string; name: string }> = ({ rarity, name }) => {
+  const colorMap = {
+    'Standard': 'from-blue-400 to-blue-600',
+    'Premium': 'from-purple-400 to-pink-500',
+    'Elite': 'from-yellow-300 to-orange-500',
+    'Special': 'from-red-400 to-pink-600',
+  }
+
+  return (
+    <div className={`bg-gradient-to-br ${colorMap[rarity as keyof typeof colorMap]} w-full h-32 rounded-lg flex items-center justify-center relative overflow-hidden`}>
+      <div className="absolute inset-0 bg-black/30"></div>
+      <motion.div
+        animate={{ rotateY: 360 }}
+        transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
+        className="relative z-10 text-5xl"
+        style={{ perspective: '1000px' }}
+      >
+        📦
+      </motion.div>
+    </div>
+  )
+}
+
+const GiftCardImage: React.FC<{ rarity: string; emoji: string }> = ({ rarity, emoji }) => {
+  const colorMap = {
+    'Classic': 'from-blue-400 to-blue-600',
+    'Premium': 'from-purple-400 to-pink-500',
+    'Rare': 'from-yellow-300 to-orange-500',
+    'Special': 'from-red-400 to-pink-600',
+  }
+
+  return (
+    <div className={`bg-gradient-to-br ${colorMap[rarity as keyof typeof colorMap]} w-full h-32 rounded-lg flex items-center justify-center relative overflow-hidden`}>
+      <div className="absolute inset-0 bg-black/30"></div>
+      <motion.div
+        animate={{ y: [-5, 5, -5] }}
+        transition={{ duration: 2, repeat: Infinity }}
+        className="relative z-10 text-5xl"
+      >
+        {emoji}
+      </motion.div>
+    </div>
+  )
+}
+
+// Header Component
+const Header: React.FC<{ user: User; onShowProfile: () => void }> = ({ user, onShowProfile }) => {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-gradient-to-b from-dark-card to-transparent p-4 border-b border-neon-purple/30"
+    >
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3 cursor-pointer" onClick={onShowProfile}>
+          <div className="w-10 h-10 rounded-full bg-neon-purple/30 flex items-center justify-center text-xl">
+            {user.avatar || '👤'}
+          </div>
+          <div>
+            <p className="text-xs text-gray-400">@{user.username}</p>
+            <p className="text-sm font-semibold text-white">{user.username}</p>
+          </div>
+        </div>
+        <motion.div
+          whileTap={{ scale: 0.95 }}
+          className="flex items-center gap-2 bg-neon-purple/20 px-3 py-2 rounded-lg neon-border"
+        >
+          <Coins className="w-5 h-5 text-neon-gold" />
+          <span className="font-bold text-neon-gold">{formatNumber(user.coins)}</span>
+        </motion.div>
+      </div>
+
+      <motion.button
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
+        className="w-full bg-gradient-to-r from-neon-purple to-neon-pink py-2 rounded-lg font-semibold text-sm hover:shadow-neon-purple transition"
+      >
+        Получить награду
+      </motion.button>
+    </motion.div>
+  )
+}
+
+// Hero Banner
+const HeroBanner: React.FC<{ onNavigate: (page: string) => void }> = ({ onNavigate }) => {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ delay: 0.2 }}
+      className="relative p-4 m-4 rounded-xl overflow-hidden card-glow"
+    >
+      <div className="absolute inset-0 bg-gradient-to-br from-neon-purple/30 to-neon-blue/20"></div>
+      <div className="relative z-10">
+        <div className="flex justify-between items-center mb-4">
+          <div>
+            <h2 className="text-2xl font-bold text-gradient-purple mb-2">Открывай кейсы</h2>
+            <p className="text-sm text-gray-300 mb-3">и получай крутые <span className="text-neon-pink font-bold">награды!</span></p>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => onNavigate('cases')}
+              className="bg-neon-purple hover:bg-neon-purple/80 px-6 py-2 rounded-lg font-semibold text-sm flex items-center gap-2 transition"
+            >
+              Перейти <ChevronRight className="w-4 h-4" />
+            </motion.button>
+          </div>
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 8, repeat: Infinity, ease: 'linear' }}
+            className="text-6xl"
+          >
+            🎁
+          </motion.div>
+        </div>
+      </div>
+    </motion.div>
+  )
+}
+
+// Home Page
+const HomePage: React.FC<{ onNavigate: (page: string) => void; onShowProfile: () => void }> = ({ onNavigate, onShowProfile }) => {
+  const [user, setUser] = useState<User>(getTelegramUser())
+  const [weeklyDrop, setWeeklyDrop] = useState<WeeklyDrop>({
+    id: 'w1',
+    title: 'Еженедельный Дроп',
+    reward: 'Premium Case + 5000 Coins',
+    value: 5000,
+    endsAt: Date.now() + 6 * 24 * 60 * 60 * 1000,
+    claimed: false,
+  })
+  const [timeLeft, setTimeLeft] = useState(getTimeLeft(weeklyDrop.endsAt))
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTimeLeft(getTimeLeft(weeklyDrop.endsAt))
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [])
+
+  return (
+    <div className="pb-24 overflow-y-auto max-h-screen">
+      <Header user={user} onShowProfile={onShowProfile} />
+      <HeroBanner onNavigate={onNavigate} />
+
+      {/* Featured Sections */}
+      <div className="px-4 py-6 space-y-6">
+
+        {/* Weekly Drop */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="bg-gradient-to-br from-neon-gold/20 to-neon-purple/20 p-4 rounded-xl neon-border"
+        >
+          <div className="flex justify-between items-start mb-4">
+            <div>
+              <h3 className="text-lg font-bold text-neon-gold mb-1">📅 Weekly Drop</h3>
+              <p className="text-xs text-gray-400">Premium Case + 5000 Coins</p>
+            </div>
+            <div className="text-right">
+              <p className="text-xs text-gray-400">Осталось</p>
+              <p className="text-sm font-bold text-neon-gold font-mono">{timeLeft}</p>
+            </div>
+          </div>
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className="w-full bg-neon-gold/30 hover:bg-neon-gold/40 py-2 rounded-lg text-neon-gold font-semibold text-sm transition"
+          >
+            Получить награду
+          </motion.button>
+        </motion.div>
+
+        {/* Featured CS2 Cases */}
+        <div>
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-bold">CS2 Кейсы</h3>
+            <button onClick={() => onNavigate('cases')} className="text-neon-purple text-sm hover:underline">
+              Все →
+            </button>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            {CS2_CASES.slice(0, 2).map((caseItem) => (
+              <motion.div
+                key={caseItem.id}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => onNavigate('cases')}
+                className="cursor-pointer"
+              >
+                <div className="bg-dark-card rounded-lg overflow-hidden neon-border hover:shadow-neon-purple transition">
+                  <CaseCardImage rarity={caseItem.rarity} name={caseItem.name} />
+                  <div className="p-3">
+                    <p className="text-sm font-semibold text-white truncate">{caseItem.name}</p>
+                    <div className="flex justify-between items-center mt-2">
+                      <span className="text-xs text-gray-400">{caseItem.rarity}</span>
+                      <span className="text-neon-gold font-bold text-sm flex items-center gap-1">
+                        <Coins className="w-3 h-3" /> {caseItem.price}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+
+        {/* Telegram Gifts */}
+        <div>
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-bold">Подарки Telegram</h3>
+            <button onClick={() => onNavigate('gifts')} className="text-neon-purple text-sm hover:underline">
+              Все →
+            </button>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            {TELEGRAM_GIFTS.slice(0, 2).map((gift) => (
+              <motion.div
+                key={gift.id}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => onNavigate('gifts')}
+                className="cursor-pointer"
+              >
+                <div className="bg-dark-card rounded-lg overflow-hidden neon-border hover:shadow-neon-blue transition relative">
+                  <GiftCardImage rarity={gift.rarity} emoji="🎁" />
+                  <div className="p-3">
+                    <p className="text-sm font-semibold text-white truncate">{gift.name}</p>
+                    <div className="flex justify-between items-center mt-2">
+                      <span className="text-xs text-gray-400">{gift.rarity}</span>
+                      <span className="text-neon-gold font-bold text-sm">{gift.value}</span>
+                    </div>
+                  </div>
+                  {gift.obtained && (
+                    <div className="absolute top-2 right-2 bg-green-500 rounded-full p-1">
+                      <Check className="w-3 h-3 text-white" />
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+
+        {/* Daily Bonus */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+          className="bg-gradient-to-br from-neon-blue/20 to-neon-purple/20 p-4 rounded-xl neon-blue-border"
+        >
+          <div className="flex justify-between items-center">
+            <div>
+              <h3 className="text-lg font-bold text-neon-blue mb-1">🎁 Ежедневный Бонус</h3>
+              <p className="text-xs text-gray-400">Забирай награду каждый день</p>
+            </div>
+            <div className="text-right">
+              <p className="text-xs text-gray-400">Доступно через</p>
+              <p className="text-sm font-bold text-neon-blue font-mono">14:32</p>
+            </div>
+          </div>
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => onNavigate('daily')}
+            className="w-full mt-3 bg-neon-blue/30 hover:bg-neon-blue/40 py-2 rounded-lg text-neon-blue font-semibold text-sm transition"
+          >
+            Забрать
+          </motion.button>
+        </motion.div>
+
+        {/* Quick Links */}
+        <div className="grid grid-cols-3 gap-2">
+          {[
+            { icon: '📦', label: 'Инвентарь', action: 'inventory' },
+            { icon: '📈', label: 'Апгрейдер', action: 'upgrade' },
+            { icon: '🏆', label: 'Турниры', action: 'tournaments' },
+          ].map((link) => (
+            <motion.button
+              key={link.action}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => onNavigate(link.action)}
+              className="bg-dark-card rounded-lg p-3 neon-border hover:shadow-neon-purple transition text-center"
+            >
+              <div className="text-2xl mb-2">{link.icon}</div>
+              <p className="text-xs font-semibold">{link.label}</p>
+            </motion.button>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// CS2 Cases Page
+const CS2CasesPage: React.FC<{ onNavigate: (page: string) => void }> = ({ onNavigate }) => {
+  const [selectedCase, setSelectedCase] = useState<CS2Case | null>(null)
+  const [showDetail, setShowDetail] = useState(false)
+
+  const rarities = ['Standard', 'Premium', 'Elite', 'Special']
+
+  return (
+    <div className="pb-24 overflow-y-auto max-h-screen">
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="p-4 border-b border-neon-purple/30 flex items-center gap-3"
+      >
+        <button onClick={() => onNavigate('home')} className="text-neon-purple">
+          <ChevronLeft className="w-6 h-6" />
+        </button>
+        <h2 className="text-xl font-bold">CS2 Кейсы</h2>
+      </motion.div>
+
+      <div className="p-4 space-y-6">
+        {rarities.map((rarity) => (
+          <div key={rarity}>
+            <h3 className="text-sm font-bold text-neon-purple mb-3">{rarity}</h3>
+            <div className="space-y-3">
+              {CS2_CASES.filter(c => c.rarity === rarity).map((caseItem) => (
+                <motion.div
+                  key={caseItem.id}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => {
+                    setSelectedCase(caseItem)
+                    setShowDetail(true)
+                  }}
+                  className="cursor-pointer"
+                >
+                  <div className="bg-dark-card rounded-lg overflow-hidden neon-border hover:shadow-neon-purple transition p-4">
+                    <div className="grid grid-cols-3 gap-4 items-center">
+                      <div className="col-span-1">
+                        <CaseCardImage rarity={caseItem.rarity} name={caseItem.name} />
+                      </div>
+                      <div className="col-span-1">
+                        <p className="font-semibold text-white mb-1">{caseItem.name}</p>
+                        <p className="text-xs text-gray-400 mb-2">{caseItem.items.length} предметов</p>
+                        <div className="flex items-center gap-1 text-neon-gold font-bold">
+                          <Coins className="w-4 h-4" /> {caseItem.price}
+                        </div>
+                      </div>
+                      <div className="col-span-1 text-right">
+                        <motion.button
+                          whileHover={{ scale: 1.1 }}
+                          className="bg-neon-purple hover:bg-neon-purple/80 px-4 py-2 rounded-lg text-sm font-semibold transition"
+                        >
+                          <ChevronRight className="w-4 h-4" />
+                        </motion.button>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Case Detail Modal */}
+      <AnimatePresence>
+        {showDetail && selectedCase && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 flex items-end z-50"
+            onClick={() => setShowDetail(false)}
+          >
+            <motion.div
+              initial={{ y: 400 }}
+              animate={{ y: 0 }}
+              exit={{ y: 400 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-dark-card w-full rounded-t-2xl p-6 max-h-[80vh] overflow-y-auto"
+            >
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-bold">{selectedCase.name}</h3>
+                <button onClick={() => setShowDetail(false)} className="text-gray-400">
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              <CaseCardImage rarity={selectedCase.rarity} name={selectedCase.name} />
+
+              <div className="mt-6 space-y-4">
+                <h4 className="font-bold text-neon-purple">Содержимое кейса:</h4>
+                {selectedCase.items.map((item) => (
+                  <div key={item.id} className="bg-dark-bg p-3 rounded-lg flex justify-between items-center border border-neon-purple/20">
+                    <div>
+                      <p className="font-semibold text-white">{item.name}</p>
+                      <p className="text-xs text-gray-400">{item.rarity}</p>
+                    </div>
+                    <span className="text-neon-gold font-bold">${item.value}</span>
+                  </div>
+                ))}
+              </div>
+
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="w-full mt-6 bg-gradient-to-r from-neon-purple to-neon-pink py-3 rounded-lg font-bold text-white hover:shadow-neon-purple transition"
+              >
+                Открыть кейс за {selectedCase.price} монет
+              </motion.button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}
+
+// Telegram Gifts Page
+const TelegramGiftsPage: React.FC<{ onNavigate: (page: string) => void }> = ({ onNavigate }) => {
+  const [selectedGift, setSelectedGift] = useState<TelegramGift | null>(null)
+  const [showDetail, setShowDetail] = useState(false)
+
+  const rarities = ['Classic', 'Premium', 'Rare', 'Special']
+
+  return (
+    <div className="pb-24 overflow-y-auto max-h-screen">
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="p-4 border-b border-neon-blue/30 flex items-center gap-3"
+      >
+        <button onClick={() => onNavigate('home')} className="text-neon-blue">
+          <ChevronLeft className="w-6 h-6" />
+        </button>
+        <h2 className="text-xl font-bold">Подарки Telegram</h2>
+      </motion.div>
+
+      <div className="p-4 space-y-6">
+        {rarities.map((rarity) => (
+          <div key={rarity}>
+            <h3 className="text-sm font-bold text-neon-blue mb-3">{rarity}</h3>
+            <div className="grid grid-cols-2 gap-3">
+              {TELEGRAM_GIFTS.filter(g => g.rarity === rarity).map((gift) => (
+                <motion.div
+                  key={gift.id}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => {
+                    setSelectedGift(gift)
+                    setShowDetail(true)
+                  }}
+                  className="cursor-pointer"
+                >
+                  <div className="bg-dark-card rounded-lg overflow-hidden neon-blue-border hover:shadow-neon-blue transition relative">
+                    <GiftCardImage rarity={gift.rarity} emoji="🎁" />
+                    <div className="p-3">
+                      <p className="text-sm font-semibold text-white truncate">{gift.name}</p
